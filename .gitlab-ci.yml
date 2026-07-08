@@ -1,0 +1,21 @@
+stages:
+  - test
+  - demo
+
+unit-test:
+  stage: test
+  image: node:20
+  script:
+    - npm ci
+    - npm test
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+demo:
+  stage: demo
+  image: node:20
+  script:
+    - npm ci
+    - npx vitest run tests/demo/ --reporter=verbose
