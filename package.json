@@ -1,14 +1,19 @@
 {
   "name": "ise-harness",
   "version": "0.1.0",
-  "description": "Coding Agent Harness — Memory & Context Management focus",
+  "description": "Coding Agent Harness SDK — 记忆与上下文管理",
   "type": "module",
+  "bin": {
+    "ise-harness": "dist/cli/index.js"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:demo": "vitest run tests/demo/",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "lint": "tsc --noEmit"
+    "start": "node dist/cli/index.js",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
@@ -16,6 +21,9 @@
     "tsx": "^4.19.0"
   },
   "dependencies": {
-    "keytar": "^7.9.0"
+    "sql.js": "^1.10.0"
+  },
+  "optionalDependencies": {
+    "@xenova/transformers": "^2.17.0"
   }
 }
