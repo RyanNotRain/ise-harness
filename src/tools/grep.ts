@@ -17,7 +17,7 @@ export class Grep implements Tool {
   async execute(args: Record<string, unknown>): Promise<ToolResult> {
     try {
       const content = await readFile(args.path as string, 'utf-8');
-      const pattern = new RegExp(args.pattern as string, 'g');
+      const pattern = new RegExp(args.pattern as string);
       const lines = content.split('\n');
       const matches: string[] = [];
       for (let i = 0; i < lines.length; i++) {
