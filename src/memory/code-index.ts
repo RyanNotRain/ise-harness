@@ -63,7 +63,7 @@ export class CodeIndexMemory {
     if (existingHash === hash) return;
 
     const embedding = await this.embedder.embed(content);
-    const buf = Buffer.from(embedding.buffer);
+    const buf = Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength);
     db.run('INSERT OR REPLACE INTO code_index (file_path, file_hash, content, embedding) VALUES (?, ?, ?, ?)', [filePath, hash, content, Array.from(buf)]);
   }
 
@@ -83,7 +83,7 @@ export class CodeIndexMemory {
     if (rows.length === 0) return [];
 
     const scored = rows.map(row => {
-      const storedVec = new Float32Array(row.embedding);
+      const storedVec = new Float32Array(new Uint8Array(row.embedding).buffer);
       const score = this.cosineSimilarity(queryEmbedding, storedVec);
       return { filePath: row.file_path, content: row.content, score };
     });
