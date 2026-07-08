@@ -937,21 +937,40 @@ export interface Memory {
 
 ```typescript
 // src/memory/sqlite-memory.ts
-import Database from 'better-sqlite3';
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
 import type { Memory, MemoryEntry, Decision } from './types.js';
 
+let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
+
+async function initSqlJsOnce() {
+  if (!SQL) {
+    SQL = await initSqlJs();
+  }
+  return SQL;
+}
+
 export class SQLiteMemory implements Memory {
-  private db: Database.Database;
+  private db: SqlJsDatabase | null = null;
+  private dbPath: string;
+  private initialized = false;
 
   constructor(dbPath: string) {
-    this.db = new Database(dbPath);
-    this.db.exec(`
+    this.dbPath = dbPath;
+  }
+
+  private async ensureInit(): Promise<SqlJsDatabase> {
+    if (this.db && this.initialized) return this.db;
+    const sql = await initSqlJsOnce();
+    this.db = new sql.Database();
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now')),
         summary TEXT DEFAULT ''
-      );
+      )
+    `);
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,
@@ -959,7 +978,9 @@ export class SQLiteMemory implements Memory {
         content TEXT NOT NULL,
         timestamp TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (session_id) REFERENCES sessions(id)
-      );
+      )
+    `);
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS decisions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,
@@ -968,74 +989,92 @@ export class SQLiteMemory implements Memory {
         rationale TEXT NOT NULL,
         timestamp TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (session_id) REFERENCES sessions(id)
-      );
-      CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, id);
-      CREATE INDEX IF NOT EXISTS idx_decisions_session ON decisions(session_id, id);
+      )
     `);
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, id)');
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_decisions_session ON decisions(session_id, id)');
+    this.initialized = true;
+    return this.db;
   }
 
   async store(sessionId: string, entry: MemoryEntry): Promise<void> {
-    this.db.prepare('INSERT OR IGNORE INTO sessions (id) VALUES (?)').run(sessionId);
-    this.db.prepare(
-      'INSERT INTO entries (session_id, role, content) VALUES (?, ?, ?)'
-    ).run(sessionId, entry.role, entry.content);
-    this.db.prepare(
-      "UPDATE sessions SET updated_at = datetime('now') WHERE id = ?"
-    ).run(sessionId);
+    const db = await this.ensureInit();
+    db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
+    db.run('INSERT INTO entries (session_id, role, content) VALUES (?, ?, ?)', [sessionId, entry.role, entry.content]);
+    db.run("UPDATE sessions SET updated_at = datetime('now') WHERE id = ?", [sessionId]);
   }
 
   async retrieve(sessionId: string, limit?: number): Promise<MemoryEntry[]> {
-    const rows = limit
-      ? this.db.prepare(
-          'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
-        ).all(sessionId, limit)
-      : this.db.prepare(
-          'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC'
-        ).all(sessionId);
-    return (rows as Array<{ role: string; content: string }>).map(r => ({
-      role: r.role as MemoryEntry['role'],
-      content: r.content,
-    }));
+    const db = await this.ensureInit();
+    const results: MemoryEntry[] = [];
+    const sql = limit
+      ? 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
+      : 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC';
+    const params = limit ? [sessionId, limit] : [sessionId];
+    const stmt = db.prepare(sql);
+    stmt.bind(params);
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      results.push({ role: row.role as MemoryEntry['role'], content: row.content as string });
+    }
+    stmt.free();
+    return results;
   }
 
   async clear(sessionId: string): Promise<void> {
-    this.db.prepare('DELETE FROM entries WHERE session_id = ?').run(sessionId);
-    this.db.prepare('DELETE FROM decisions WHERE session_id = ?').run(sessionId);
-    this.db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+    const db = await this.ensureInit();
+    db.run('DELETE FROM entries WHERE session_id = ?', [sessionId]);
+    db.run('DELETE FROM decisions WHERE session_id = ?', [sessionId]);
+    db.run('DELETE FROM sessions WHERE id = ?', [sessionId]);
   }
 
   async summarize(sessionId: string): Promise<string> {
-    const row = this.db.prepare(
-      'SELECT summary FROM sessions WHERE id = ?'
-    ).get(sessionId) as { summary: string } | undefined;
-    return row?.summary || '';
+    const db = await this.ensureInit();
+    const stmt = db.prepare('SELECT summary FROM sessions WHERE id = ?');
+    stmt.bind([sessionId]);
+    let summary = '';
+    if (stmt.step()) {
+      summary = (stmt.getAsObject() as { summary: string }).summary || '';
+    }
+    stmt.free();
+    return summary;
   }
 
   async storeDecision(sessionId: string, decision: Decision): Promise<void> {
-    this.db.prepare('INSERT OR IGNORE INTO sessions (id) VALUES (?)').run(sessionId);
-    this.db.prepare(
-      'INSERT INTO decisions (session_id, context, decision, rationale) VALUES (?, ?, ?, ?)'
-    ).run(sessionId, decision.context, decision.decision, decision.rationale);
+    const db = await this.ensureInit();
+    db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
+    db.run('INSERT INTO decisions (session_id, context, decision, rationale) VALUES (?, ?, ?, ?)', [sessionId, decision.context, decision.decision, decision.rationale]);
   }
 
   async retrieveDecisions(sessionId: string, limit?: number): Promise<Decision[]> {
-    const rows = limit
-      ? this.db.prepare(
-          'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC LIMIT ?'
-        ).all(sessionId, limit)
-      : this.db.prepare(
-          'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC'
-        ).all(sessionId);
-    return rows as Decision[];
+    const db = await this.ensureInit();
+    const results: Decision[] = [];
+    const sql = limit
+      ? 'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC LIMIT ?'
+      : 'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC';
+    const params = limit ? [sessionId, limit] : [sessionId];
+    const stmt = db.prepare(sql);
+    stmt.bind(params);
+    while (stmt.step()) {
+      const row = stmt.getAsObject() as { context: string; decision: string; rationale: string };
+      results.push(row);
+    }
+    stmt.free();
+    return results;
   }
 
   async updateSummary(sessionId: string, summary: string): Promise<void> {
-    this.db.prepare('INSERT OR IGNORE INTO sessions (id) VALUES (?)').run(sessionId);
-    this.db.prepare("UPDATE sessions SET summary = ?, updated_at = datetime('now') WHERE id = ?").run(summary, sessionId);
+    const db = await this.ensureInit();
+    db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
+    db.run("UPDATE sessions SET summary = ?, updated_at = datetime('now') WHERE id = ?", [summary, sessionId]);
   }
 
   close(): void {
-    this.db.close();
+    if (this.db) {
+      this.db.close();
+      this.db = null;
+      this.initialized = false;
+    }
   }
 }
 ```
@@ -1144,8 +1183,17 @@ Expected: FAIL
 
 ```typescript
 // src/memory/code-index.ts
-import Database from 'better-sqlite3';
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
 import { createHash } from 'node:crypto';
+
+let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
+
+async function initSqlJsOnce() {
+  if (!SQL) {
+    SQL = await initSqlJs();
+  }
+  return SQL;
+}
 
 export interface Embedder {
   embed(text: string): Promise<Float32Array>;
@@ -1158,13 +1206,19 @@ export interface CodeIndexResult {
 }
 
 export class CodeIndexMemory {
-  private db: Database.Database;
+  private db: SqlJsDatabase | null = null;
   private embedder: Embedder;
+  private initialized = false;
 
   constructor(dbPath: string, options: { embedder: Embedder }) {
-    this.db = new Database(dbPath);
     this.embedder = options.embedder;
-    this.db.exec(`
+  }
+
+  private async ensureInit(): Promise<SqlJsDatabase> {
+    if (this.db && this.initialized) return this.db;
+    const sql = await initSqlJsOnce();
+    this.db = new sql.Database();
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS code_index (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         file_path TEXT NOT NULL,
@@ -1173,39 +1227,48 @@ export class CodeIndexMemory {
         embedding BLOB,
         updated_at TEXT DEFAULT (datetime('now')),
         UNIQUE(file_path)
-      );
+      )
     `);
+    this.initialized = true;
+    return this.db;
   }
 
   async indexFile(filePath: string, content: string): Promise<void> {
+    const db = await this.ensureInit();
     const hash = createHash('sha256').update(content).digest('hex');
-    const existing = this.db.prepare(
-      'SELECT file_hash FROM code_index WHERE file_path = ?'
-    ).get(filePath) as { file_hash: string } | undefined;
 
-    if (existing && existing.file_hash === hash) return;
+    const stmt = db.prepare('SELECT file_hash FROM code_index WHERE file_path = ?');
+    stmt.bind([filePath]);
+    let existingHash = '';
+    if (stmt.step()) {
+      existingHash = (stmt.getAsObject() as { file_hash: string }).file_hash;
+    }
+    stmt.free();
+
+    if (existingHash === hash) return;
 
     const embedding = await this.embedder.embed(content);
     const buf = Buffer.from(embedding.buffer);
-    this.db.prepare(
-      'INSERT OR REPLACE INTO code_index (file_path, file_hash, content, embedding) VALUES (?, ?, ?, ?)'
-    ).run(filePath, hash, content, buf);
+    db.run('INSERT OR REPLACE INTO code_index (file_path, file_hash, content, embedding) VALUES (?, ?, ?, ?)', [filePath, hash, content, Array.from(buf)]);
   }
 
   async query(query: string, limit: number): Promise<CodeIndexResult[]> {
+    const db = await this.ensureInit();
     const queryEmbedding = await this.embedder.embed(query);
-    const rows = this.db.prepare(
-      'SELECT file_path, content, embedding FROM code_index'
-    ).all() as Array<{ file_path: string; content: string; embedding: Buffer }>;
+
+    const rows: Array<{ file_path: string; content: string; embedding: number[] }> = [];
+    const stmt = db.prepare('SELECT file_path, content, embedding FROM code_index');
+    while (stmt.step()) {
+      const row = stmt.getAsObject() as { file_path: string; content: string; embedding: Int8Array };
+      const emb = Array.from(row.embedding);
+      rows.push({ file_path: row.file_path, content: row.content, embedding: emb });
+    }
+    stmt.free();
 
     if (rows.length === 0) return [];
 
     const scored = rows.map(row => {
-      const storedVec = new Float32Array(
-        row.embedding.buffer,
-        row.embedding.byteOffset,
-        row.embedding.byteLength / 4
-      );
+      const storedVec = new Float32Array(row.embedding);
       const score = this.cosineSimilarity(queryEmbedding, storedVec);
       return { filePath: row.file_path, content: row.content, score };
     });
@@ -1218,7 +1281,8 @@ export class CodeIndexMemory {
     let dot = 0;
     let normA = 0;
     let normB = 0;
-    for (let i = 0; i < a.length; i++) {
+    const len = Math.min(a.length, b.length);
+    for (let i = 0; i < len; i++) {
       dot += a[i] * b[i];
       normA += a[i] * a[i];
       normB += b[i] * b[i];
@@ -1227,7 +1291,11 @@ export class CodeIndexMemory {
   }
 
   close(): void {
-    this.db.close();
+    if (this.db) {
+      this.db.close();
+      this.db = null;
+      this.initialized = false;
+    }
   }
 }
 ```

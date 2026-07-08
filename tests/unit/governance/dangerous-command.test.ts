@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DangerousCommandGuard } from '../../../src/governance/dangerous-command.js';
+import { FileDeletionGuard } from '../../../src/governance/file-deletion.js';
 
 describe('DangerousCommandGuard', () => {
   const guard = new DangerousCommandGuard();
@@ -33,5 +34,24 @@ describe('DangerousCommandGuard', () => {
   it('应拦截 shutdown 命令', () => {
     const result = guard.check({ command: 'shutdown now' });
     expect(result.allowed).toBe(false);
+  });
+});
+
+describe('FileDeletionGuard', () => {
+  const guard = new FileDeletionGuard();
+
+  it('应拦截删除受保护目录', () => {
+    const result = guard.check({ command: 'rm -rf /etc/config', action: 'delete /etc/config' });
+    expect(result.allowed).toBe(false);
+  });
+
+  it('应放行删除非保护目录', () => {
+    const result = guard.check({ command: 'rm myfile.txt', action: 'delete myfile.txt' });
+    expect(result.allowed).toBe(true);
+  });
+
+  it('非删除操作应放行', () => {
+    const result = guard.check({ command: 'ls -la', action: 'ls -la' });
+    expect(result.allowed).toBe(true);
   });
 });

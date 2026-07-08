@@ -24,7 +24,7 @@ export class HITLHandler {
   async requestConfirmation(request: HITLRequest): Promise<HITLResponse> {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
-        resolve({ approved: false, timeout: true });
+        resolve({ approved: !this.options.defaultDeny, timeout: true });
       }, this.options.timeout * 1000);
 
       const severityLabel = request.severity === 'block' ? '阻断' : '警告';

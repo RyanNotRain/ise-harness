@@ -22,4 +22,15 @@ describe('HITLHandler', () => {
     });
     expect(result.approved).toBe(false);
   });
+
+  it('默认允许策略下超时应批准', async () => {
+    const handler = new HITLHandler({ timeout: 0.01, defaultDeny: false });
+    const result = await handler.requestConfirmation({
+      action: '删除文件',
+      reason: '安全目录',
+      severity: 'warn',
+    });
+    expect(result.approved).toBe(true);
+    expect(result.timeout).toBe(true);
+  });
 });
