@@ -7,5 +7,5 @@ export interface Feedback {
 
 export interface Validator {
   name: string;
-  validate(result: { success: boolean; data: unknown; error?: string }): Feedback;
+  validate(result: { success: boolean; data: unknown; error?: string }): Feedback | Promise<Feedback>;
 }
