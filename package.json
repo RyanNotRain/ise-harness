@@ -3,8 +3,25 @@
   "version": "0.1.0",
   "description": "Coding Agent Harness SDK — 记忆与上下文管理",
   "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
-    "ise-harness": "dist/cli/index.js"
+    "ise-harness": "./dist/cli/index.js"
+  },
+  "engines": {
+    "node": ">=20.12"
   },
   "scripts": {
     "test": "vitest run",
@@ -12,8 +29,10 @@
     "test:demo": "vitest run tests/demo/",
     "build": "tsc",
     "start": "node dist/cli/index.js",
+    "web": "node dist/cli/index.js web",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepack": "npm run build",
+    "prepublishOnly": "npm test && npm run lint"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

@@ -1,6 +1,6 @@
 declare module 'sql.js' {
   interface SqlJsStatic {
-    Database: new () => Database;
+    Database: new (data?: Uint8Array) => Database;
   }
 
   interface Database {

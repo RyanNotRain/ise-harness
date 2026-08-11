@@ -1,5 +1,8 @@
 import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
 import { createHash } from 'node:crypto';
+import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { dirname, extname, join, relative } from 'node:path';
 
 let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
 
@@ -14,6 +17,27 @@ export interface Embedder {
   embed(text: string): Promise<Float32Array>;
 }
 
+export class TransformersEmbedder implements Embedder {
+  private pipelinePromise?: Promise<(text: string, options: Record<string, unknown>) => Promise<{ data: Float32Array }>>;
+
+  constructor(private model = 'Xenova/all-MiniLM-L6-v2') {}
+
+  async embed(text: string): Promise<Float32Array> {
+    if (!this.pipelinePromise) {
+      const moduleName = '@xenova/transformers';
+      this.pipelinePromise = import(moduleName).then(async (module) => {
+        return module.pipeline('feature-extraction', this.model) as Promise<(
+          text: string,
+          options: Record<string, unknown>
+        ) => Promise<{ data: Float32Array }>>;
+      });
+    }
+    const extractor = await this.pipelinePromise;
+    const result = await extractor(text, { pooling: 'mean', normalize: true });
+    return new Float32Array(result.data);
+  }
+}
+
 export interface CodeIndexResult {
   filePath: string;
   content: string;
@@ -24,15 +48,22 @@ export class CodeIndexMemory {
   private db: SqlJsDatabase | null = null;
   private embedder: Embedder;
   private initialized = false;
+  private dbPath: string;
+  private readonly inMemory: boolean;
 
   constructor(dbPath: string, options: { embedder: Embedder }) {
+    this.dbPath = dbPath;
+    this.inMemory = dbPath === ':memory:';
     this.embedder = options.embedder;
   }
 
   private async ensureInit(): Promise<SqlJsDatabase> {
     if (this.db && this.initialized) return this.db;
     const sql = await initSqlJsOnce();
-    this.db = new sql.Database();
+    const existing = !this.inMemory && existsSync(this.dbPath)
+      ? new Uint8Array(await readFile(this.dbPath))
+      : undefined;
+    this.db = existing ? new sql.Database(existing) : new sql.Database();
     this.db.run(`
       CREATE TABLE IF NOT EXISTS code_index (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,11 +96,40 @@ export class CodeIndexMemory {
     const embedding = await this.embedder.embed(content);
     const buf = Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength);
     db.run('INSERT OR REPLACE INTO code_index (file_path, file_hash, content, embedding) VALUES (?, ?, ?, ?)', [filePath, hash, content, Array.from(buf)]);
+    await this.persist(db);
+  }
+
+  async indexDirectory(
+    rootPath: string,
+    options: { excludePatterns?: string[]; extensions?: string[]; maxFileBytes?: number } = {}
+  ): Promise<number> {
+    const excludePatterns = options.excludePatterns ?? ['node_modules', 'dist', '.git'];
+    const extensions = options.extensions ?? ['.ts', '.tsx', '.js', '.jsx', '.json', '.md'];
+    const maxFileBytes = options.maxFileBytes ?? 512 * 1024;
+    let count = 0;
+
+    const visit = async (directory: string): Promise<void> => {
+      for (const entry of await readdir(directory, { withFileTypes: true })) {
+        const fullPath = join(directory, entry.name);
+        const relativePath = relative(rootPath, fullPath);
+        if (excludePatterns.some((pattern) => relativePath.split('/').includes(pattern))) continue;
+        if (entry.isDirectory()) {
+          await visit(fullPath);
+          continue;
+        }
+        if (!entry.isFile() || !extensions.includes(extname(entry.name))) continue;
+        if ((await stat(fullPath)).size > maxFileBytes) continue;
+        await this.indexFile(relativePath, await readFile(fullPath, 'utf-8'));
+        count++;
+      }
+    };
+
+    await visit(rootPath);
+    return count;
   }
 
   async query(query: string, limit: number): Promise<CodeIndexResult[]> {
     const db = await this.ensureInit();
-    const queryEmbedding = await this.embedder.embed(query);
 
     const rows: Array<{ file_path: string; content: string; embedding: number[] }> = [];
     const stmt = db.prepare('SELECT file_path, content, embedding FROM code_index');
@@ -81,6 +141,7 @@ export class CodeIndexMemory {
     stmt.free();
 
     if (rows.length === 0) return [];
+    const queryEmbedding = await this.embedder.embed(query);
 
     const scored = rows.map(row => {
       const storedVec = new Float32Array(new Uint8Array(row.embedding).buffer);
@@ -102,14 +163,24 @@ export class CodeIndexMemory {
       normA += a[i] * a[i];
       normB += b[i] * b[i];
     }
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+    return denominator === 0 ? 0 : dot / denominator;
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.db) {
+      await this.persist(this.db);
       this.db.close();
       this.db = null;
       this.initialized = false;
     }
+  }
+
+  private async persist(db: SqlJsDatabase): Promise<void> {
+    if (this.inMemory) return;
+    await mkdir(dirname(this.dbPath), { recursive: true });
+    const temporaryPath = `${this.dbPath}.tmp`;
+    await writeFile(temporaryPath, db.export(), { mode: 0o600 });
+    await rename(temporaryPath, this.dbPath);
   }
 }

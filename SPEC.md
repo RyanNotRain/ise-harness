@@ -37,6 +37,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 | US-8 | 作为开发者，我想在测试中使用 mock LLM 替代真实模型，这样 CI 不依赖网络和 API 费用。 | P0 |
 | US-9 | 作为开发者，我想让 agent 在上下文窗口接近上限时自动压缩历史，这样长对话不会中断。 | P1 |
 | US-10 | 作为开发者，我想用 SQLite 持久化存储 agent 的记忆，这样 agent 重启后仍能访问历史信息。 | P0 |
+| US-11 | 作为验收者，我想通过受访问令牌保护的 WebUI 提交任务并查看结果，这样无需安装 CLI 也能体验核心闭环。 | P0 |
 
 ---
 
@@ -45,7 +46,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 ### 3.1 核心模块：Agent 主循环（`src/core/`）
 
 **`Agent` 类**
-- 输入：`LLMProvider`、工具列表、记忆实例、护栏列表、校验器列表
+- 输入：`LLMProvider`、工具列表、记忆与代码索引实例、上下文窗口、护栏列表、可选 HITL、校验器列表、事件回调
 - 行为：
   1. 收集上下文（系统提示 + 记忆检索 + 当前对话历史）
   2. 调用 LLM 获取下一步动作
@@ -74,7 +75,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - `summarize(sessionId)` — 获取会话摘要
 
 #### 3.2.1 `SQLiteMemory`（跨会话记忆）
-- 使用 SQLite 存储对话历史
+- 使用 sql.js 的 SQLite 格式存储对话历史；非 `:memory:` 路径在每次写操作后原子导出到磁盘
 - 表结构：
   - `sessions`: session_id, created_at, summary, metadata
   - `entries`: id, session_id, role, content, timestamp
@@ -86,6 +87,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - 按用户查询执行语义检索（余弦相似度排序）
 - 排除 node_modules、dist、.git 等目录
 - 支持增量更新（通过文件哈希判断是否变更）
+- `indexDirectory` 扫描工作区，排除 node_modules、dist、.git，跳过超大文件
 
 #### 3.2.3 `ContextWindowMemory`（上下文窗口管理）
 - 监控 token 使用量（估算：约 4 字符/token）
@@ -107,9 +109,10 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - `Bash` — 执行 shell 命令，返回 stdout/stderr/exit code
 - `Grep` — 搜索文件内容
 
-**工具注册：**
-- `agent.registerTool(tool)` — 运行时注册
-- `ToolRegistry` — 管理工具注册、查找、列出
+**工具注册与范围：**
+- `Agent` 构造时注入工具；`ToolRegistry` 可管理注册、查找和模型工具 schema
+- 文件工具将路径解析到 `workspaceRoot`，拒绝 `..` 或绝对路径逃逸
+- Bash 固定以 `workspaceRoot` 为 cwd，并在主循环中接受护栏检查
 
 ### 3.4 治理模块（`src/governance/`）
 
@@ -152,37 +155,50 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 **配置来源（优先级从高到低）：**
 1. 构造函数参数
 2. 配置文件（`ise-harness.json`）
-3. 环境变量
-4. 默认值
+3. 默认值
+
+环境变量只承载 `ISE_API_KEY`、`ISE_MASTER_PASSWORD`、`ISE_WEB_ACCESS_TOKEN`、`PORT` 和 `LOG_LEVEL` 等运行时秘密/进程参数，不合并进可序列化配置对象。
 
 **配置项：**
-- `model`: provider、model、apiKey、maxTokens、temperature
+- `model`: provider、model、baseURL、maxTokens、temperature；API key 禁止写入 JSON 配置
 - `memory`: type、path、codeIndex（enabled + excludePatterns）、contextWindow（maxTokens + compressionThreshold）
 - `tools`: 启用的工具列表
 - `guardrails`: dangerousCommands、fileDeletion、hitlTimeout
 - `feedback`: validators、maxRetries
+- `web`: port；公网访问令牌仅来自环境变量，不进入配置文件
+
+### 3.7 CLI 与 WebUI（`src/cli/`、`src/app/`）
+
+- `init`：创建默认配置且不覆盖已有文件
+- `key set/view/update/clear`：管理加密凭据，状态查询不回显明文
+- `run`：加载配置、凭据和完整运行时，执行一次编码任务
+- `index`：使用可选本地 embedding 建立代码索引
+- `web`：启动 WebUI 与 `/health`；配置 `ISE_WEB_ACCESS_TOKEN` 后，`POST /api/run` 必须携带 Bearer token
+- Web 模式没有交互式 HITL，所有被拦截动作默认拒绝
 
 ---
 
 ## 4. 非功能性需求
 
 ### 4.1 性能
-- harness 本身开销 < 50ms（不含 LLM 调用延迟）
-- 记忆检索延迟 < 100ms（SQLite 本地查询）
-- 代码索引首次构建：1000 文件 < 30 秒
-- 增量索引 < 2 秒
+- 主循环不得在单轮中重复初始化数据库或 embedding 模型
+- 相同哈希的文件不得重复生成 embedding
+- 上下文超过配置阈值时必须压缩旧历史，避免无限增长
+- 本项目不承诺固定毫秒指标；性能受设备、WASM 与本地模型影响，提交前记录演示设备的实测值
 
 ### 4.2 安全（凭据威胁模型）
 
 **威胁：** API key 泄露（通过源码、Git 历史、终端日志、环境变量转储）
 
 **对策：**
-- Key 通过加密文件存储（AES-256-GCM + 主密码）
+- Key 通过权限为 `0600` 的加密文件存储（scrypt + AES-256-GCM + 随机 salt/IV + 主密码）
 - 环境变量 `.env` 支持（文档说明明文风险）
-- 首次运行引导用户录入 key（隐藏输入，不回显）
+- 首次运行通过 `key set` 引导用户录入 key 和主密码（TTY 不回显）
 - 提供 `key set`（录入）/ `key view`（显示状态，不回显明文）/ `key clear`（清除）命令
 - 运行时 key 仅存在于进程内存中，不在日志中输出
 - `.env` 加入 `.gitignore`
+- 无默认主密码；错误主密码或密文篡改必须拒绝解密
+- WebUI 可配置独立访问令牌，避免公网用户滥用服务端 API key
 
 ### 4.3 可用性
 - 提供 CLI 命令：`ise-harness key`（管理 key）、`ise-harness run`（运行 agent）
@@ -190,10 +206,9 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - 首次运行引导流程
 
 ### 4.4 可观测性
-- 结构化日志（JSON Lines），支持 `LOG_LEVEL=debug`
-- 每步 LLM 调用记录 token 消耗
-- 护栏拦截记录（动作、原因、用户决策）
-- 记忆操作记录（检索、存储、压缩）
+- `AgentRunResult.events` 返回结构化事件；`LOG_LEVEL=debug` 时输出 JSON Lines
+- LLM 事件记录轮次、停机原因与供应商返回的 token 消耗
+- 工具、护栏、反馈和记忆检索均产生事件，但不记录 API key 或主密码
 
 ---
 
@@ -236,10 +251,9 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 
 | 依赖 | 用途 | 替代方案 |
 |------|------|---------|
-| better-sqlite3 | 持久化记忆存储 | 文件系统 JSON |
+| sql.js | SQLite/WASM 持久化记忆存储 | 文件系统 JSON |
 | OpenAI API / Anthropic API | LLM 调用 | 本地 Ollama |
 | @xenova/transformers | 本地 embedding 生成 | OpenAI embedding API |
-| keytar | macOS Keychain 访问（可选） | 加密文件 + 主密码 |
 
 ---
 
@@ -275,12 +289,13 @@ code_index
 
 ```typescript
 interface HarnessConfig {
+  workspaceRoot: string;
   model: {
     provider: 'openai' | 'anthropic' | 'mock';
     model: string;
-    apiKey?: string;
     maxTokens: number;
     temperature: number;
+    baseURL?: string;
   };
   memory: {
     type: 'sqlite';
@@ -298,6 +313,7 @@ interface HarnessConfig {
     validators: string[];
     maxRetries: number;
   };
+  web: { port: number };
 }
 ```
 
@@ -307,15 +323,15 @@ interface HarnessConfig {
 
 ### 7.1 API Key 安全存储
 
-**方案：** 加密文件 + 主密码（AES-256-GCM），macOS 下可选 keytar 集成
+**方案：** 权限受控的加密文件 + 主密码（scrypt + AES-256-GCM）
 
 **流程图：**
 ```
 首次运行
-  ├─ 检查环境变量 ISE_API_KEY
+  ├─ 检查配置/环境变量 ISE_API_KEY
   │   ├─ 存在 → 使用
   │   └─ 不存在 → 进入下一步
-  ├─ 检查加密文件中是否已有 key
+  ├─ 检查 ~/.ise-harness/credentials.enc.json 中是否已有 key
   │   ├─ 存在 → 使用
   │   └─ 不存在 → 提示用户输入（隐藏输入，不回显）
   └─ 存入加密文件 → 完成
@@ -333,6 +349,9 @@ interface HarnessConfig {
 - 安装：`npm install -g ise-harness`
 - 作为 SDK：`npm install ise-harness --save`
 - 提供 CLI 命令 `ise-harness`
+- `npm pack` 必须包含 `dist/`、声明文件、CLI 与 LICENSE
+- CI 将 tarball 全局安装后运行 `ise-harness --help`
+- WebUI 使用 `render.yaml` 部署；真实 URL 与最后一次健康检查记录写入 `DEPLOYMENT.md`
 
 ---
 
@@ -341,12 +360,12 @@ interface HarnessConfig {
 | 决策 | 选择 | 理由 |
 |------|------|------|
 | 语言 | TypeScript | 类型安全、生态丰富、适合 SDK 开发 |
-| 运行时 | Node.js 18+ | 广泛的兼容性、LTS 支持 |
+| 运行时 | Node.js 20.12+ | 原生 fetch、内置 `.env` 加载、CI 与部署环境一致 |
 | 测试 | Vitest | 快速、兼容 Jest API、ESM 原生支持 |
-| 数据库 | better-sqlite3 | 同步 API、零配置、高性能 |
-| 凭据存储 | 加密文件 + 主密码 | 跨平台、无需额外依赖 |
+| 数据库 | sql.js | 无原生编译依赖，可导出标准 SQLite 数据库 |
+| 凭据存储 | scrypt + AES-256-GCM 加密文件 | 跨平台、密文认证、无需硬编码默认密码 |
 | 本地 Embedding | @xenova/transformers | 纯 JS 实现、无需 Python、本地运行 |
-| LLM 客户端 | openai npm 包 + @anthropic-ai/sdk | 覆盖两大主流供应商 |
+| LLM 客户端 | 原生 fetch + 自研协议适配 | 仅使用供应商单次 API，不引入现成 agent runner |
 | 分发 | npm | 覆盖开发者 SDK 场景 |
 
 ---
@@ -404,8 +423,8 @@ interface HarnessConfig {
 | 功能 | 验收标准 |
 |------|---------|
 | Agent 主循环 | 通过 mock LLM 验证：给定输入 → 调用 LLM → 解析动作 → 执行工具 → 返回结果 |
-| 多 LLM 提供者 | 切换 OpenAI / Anthropic / Mock 后，同一测试用例通过 |
-| SQLite 记忆 | 存 100 条记录后检索，断言返回正确结果 |
+| 多 LLM 提供者 | Mock 验证循环；mock HTTP 验证 OpenAI/Anthropic 工具请求与响应协议 |
+| SQLite 记忆 | 实例 A 写盘并关闭，实例 B 使用相同路径恢复记录 |
 | 代码索引 | 索引一个文件，查询后返回相关片段 |
 | 上下文压缩 | 超出阈值后对话被压缩为摘要，断言 token 数减少 |
 | 护栏拦截 | 对危险命令返回 block，对安全命令放行 |
@@ -414,7 +433,8 @@ interface HarnessConfig {
 | 配置加载 | 加载 JSON 配置，正确合并默认值 |
 | Mock LLM | 替换 MockLLMProvider 后，所有核心测试通过 |
 | 凭据管理 | key set → key view（不显示明文）→ key clear 流程完整 |
-| 分发 | `npm install` 后 `ise-harness --help` 可运行 |
+| 分发 | `npm pack` → 全局安装 tarball → `ise-harness --help` 可运行 |
+| WebUI | `/health` 返回 200；配置访问令牌时，未授权 `/api/run` 返回 401 |
 
 ---
 
@@ -422,8 +442,9 @@ interface HarnessConfig {
 
 | 风险 | 影响 | 缓解措施 |
 |------|------|---------|
-| better-sqlite3 需要原生编译 | 安装失败 | 提供 prebuilt 二进制或 fallback 到 JSON 文件存储 |
 | @xenova/transformers 体积大 | 打包体积增大 | 作为可选依赖，用户可选择不启用代码索引 |
 | 本地 embedding 质量不足 | 代码检索不准确 | 支持用户配置外部 embedding API |
 | 上下文窗口压缩丢失关键信息 | agent 忘记重要上下文 | 保留最近 5 轮对话的完整内容，仅压缩更早的历史 |
-| 加密文件方案依赖主密码安全性 | 主密码泄露导致 key 泄露 | 提示用户使用强密码，macOS 下可选 keytar 集成 |
+| 加密文件方案依赖主密码安全性 | 主密码泄露导致 key 泄露 | 无默认密码、隐藏录入、限制文件权限；生产可迁移系统钥匙串 |
+| shell 规则不能覆盖所有混淆语法 | 危险动作漏报 | 工作区隔离、默认拒绝 HITL、公网模式禁止批准，并建议容器/低权限用户 |
+| 部署文件系统可能是临时的 | 重启后记忆丢失 | 课程演示记录限制；生产部署挂载持久卷或外接数据库 |

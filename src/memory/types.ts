@@ -18,5 +18,5 @@ export interface Memory {
   storeDecision(sessionId: string, decision: Decision): Promise<void>;
   retrieveDecisions(sessionId: string, limit?: number): Promise<Decision[]>;
   updateSummary(sessionId: string, summary: string): Promise<void>;
-  close(): void;
+  close(): Promise<void>;
 }

@@ -2,6 +2,7 @@ export interface GuardrailCheck {
   command?: string;
   filePath?: string;
   action: string;
+  toolName?: string;
 }
 
 export interface GuardrailResult {
@@ -12,5 +13,5 @@ export interface GuardrailResult {
 
 export interface Guardrail {
   name: string;
-  check(action: GuardrailCheck): GuardrailResult;
+  check(action: GuardrailCheck): GuardrailResult | Promise<GuardrailResult>;
 }

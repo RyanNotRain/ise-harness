@@ -14,7 +14,7 @@ describe('CodeIndexMemory', () => {
     const results = await index.query('function hello', 5);
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].content).toContain('hello');
-    index.close();
+    await index.close();
   });
 
   it('未索引的查询应返回空', async () => {
@@ -27,7 +27,7 @@ describe('CodeIndexMemory', () => {
     });
     const results = await index.query('nothing', 5);
     expect(results).toEqual([]);
-    index.close();
+    await index.close();
   });
 
   it('应支持增量更新（相同哈希不重新索引）', async () => {
@@ -44,7 +44,7 @@ describe('CodeIndexMemory', () => {
     expect(embedCalls.length).toBe(1);
     await index.indexFile('/test/file.ts', 'const x = 1;');
     expect(embedCalls.length).toBe(1);
-    index.close();
+    await index.close();
   });
 
   it('内容变更后应重新索引', async () => {
@@ -60,6 +60,6 @@ describe('CodeIndexMemory', () => {
     await index.indexFile('/test/file.ts', 'const x = 1;');
     await index.indexFile('/test/file.ts', 'const x = 2;');
     expect(embedCalls.length).toBe(2);
-    index.close();
+    await index.close();
   });
 });

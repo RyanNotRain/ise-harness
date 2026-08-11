@@ -1,4 +1,7 @@
 import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { Memory, MemoryEntry, Decision } from './types.js';
 
 let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
@@ -14,15 +17,20 @@ export class SQLiteMemory implements Memory {
   private db: SqlJsDatabase | null = null;
   private dbPath: string;
   private initialized = false;
+  private readonly inMemory: boolean;
 
   constructor(dbPath: string) {
     this.dbPath = dbPath;
+    this.inMemory = dbPath === ':memory:';
   }
 
   private async ensureInit(): Promise<SqlJsDatabase> {
     if (this.db && this.initialized) return this.db;
     const sql = await initSqlJsOnce();
-    this.db = new sql.Database();
+    const existing = !this.inMemory && existsSync(this.dbPath)
+      ? new Uint8Array(await readFile(this.dbPath))
+      : undefined;
+    this.db = existing ? new sql.Database(existing) : new sql.Database();
     this.db.run(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -59,10 +67,17 @@ export class SQLiteMemory implements Memory {
   }
 
   async store(sessionId: string, entry: MemoryEntry): Promise<void> {
+    if (Buffer.byteLength(entry.content, 'utf-8') > 100 * 1024) {
+      throw new Error('单条记忆不能超过 100KB');
+    }
     const db = await this.ensureInit();
     db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
     db.run('INSERT INTO entries (session_id, role, content) VALUES (?, ?, ?)', [sessionId, entry.role, entry.content]);
     db.run("UPDATE sessions SET updated_at = datetime('now') WHERE id = ?", [sessionId]);
+    db.run(`DELETE FROM entries WHERE id IN (
+      SELECT id FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT -1 OFFSET 10000
+    )`, [sessionId]);
+    await this.persist(db);
   }
 
   async retrieve(sessionId: string, limit?: number): Promise<MemoryEntry[]> {
@@ -87,6 +102,7 @@ export class SQLiteMemory implements Memory {
     db.run('DELETE FROM entries WHERE session_id = ?', [sessionId]);
     db.run('DELETE FROM decisions WHERE session_id = ?', [sessionId]);
     db.run('DELETE FROM sessions WHERE id = ?', [sessionId]);
+    await this.persist(db);
   }
 
   async summarize(sessionId: string): Promise<string> {
@@ -105,6 +121,7 @@ export class SQLiteMemory implements Memory {
     const db = await this.ensureInit();
     db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
     db.run('INSERT INTO decisions (session_id, context, decision, rationale) VALUES (?, ?, ?, ?)', [sessionId, decision.context, decision.decision, decision.rationale]);
+    await this.persist(db);
   }
 
   async retrieveDecisions(sessionId: string, limit?: number): Promise<Decision[]> {
@@ -128,13 +145,23 @@ export class SQLiteMemory implements Memory {
     const db = await this.ensureInit();
     db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
     db.run("UPDATE sessions SET summary = ?, updated_at = datetime('now') WHERE id = ?", [summary, sessionId]);
+    await this.persist(db);
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.db) {
+      await this.persist(this.db);
       this.db.close();
       this.db = null;
       this.initialized = false;
     }
+  }
+
+  private async persist(db: SqlJsDatabase): Promise<void> {
+    if (this.inMemory) return;
+    await mkdir(dirname(this.dbPath), { recursive: true });
+    const temporaryPath = `${this.dbPath}.tmp`;
+    await writeFile(temporaryPath, db.export(), { mode: 0o600 });
+    await rename(temporaryPath, this.dbPath);
   }
 }

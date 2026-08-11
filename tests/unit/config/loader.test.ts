@@ -14,10 +14,10 @@ describe('ConfigLoader', () => {
     expect(config.model.provider).toBe('openai');
   });
 
-  it('应从环境变量读取 API key', async () => {
+  it('不得把环境变量中的 API key 复制进可序列化配置', async () => {
     process.env.ISE_API_KEY = 'test-key-123';
     const config = await loadConfig([], {});
-    expect(config.model.apiKey).toBe('test-key-123');
+    expect('apiKey' in config.model).toBe(false);
     delete process.env.ISE_API_KEY;
   });
 });

@@ -3,5 +3,8 @@ node_modules/
 dist/
 *.db
 .env
+ise-harness.json
+credentials.enc.json*
+ise-harness-*.tgz
 .DS_Store
 *.log

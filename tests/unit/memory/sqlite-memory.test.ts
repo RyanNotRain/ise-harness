@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SQLiteMemory } from '../../../src/memory/sqlite-memory.js';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 describe('SQLiteMemory', () => {
   let memory: SQLiteMemory;
@@ -8,8 +11,8 @@ describe('SQLiteMemory', () => {
     memory = new SQLiteMemory(':memory:');
   });
 
-  afterAll(() => {
-    memory.close();
+  afterAll(async () => {
+    await memory.close();
   });
 
   it('应能存储和检索条目', async () => {
@@ -54,5 +57,20 @@ describe('SQLiteMemory', () => {
     await memory.updateSummary('session1', '这是一个测试会话');
     const summary = await memory.summarize('session1');
     expect(summary).toBe('这是一个测试会话');
+  });
+
+  it('关闭后新实例应能恢复磁盘记忆', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'ise-memory-'));
+    const path = join(directory, 'memory.db');
+    try {
+      const first = new SQLiteMemory(path);
+      await first.store('persistent', { role: 'user', content: '跨进程约定' });
+      await first.close();
+      const second = new SQLiteMemory(path);
+      expect(await second.retrieve('persistent')).toEqual([{ role: 'user', content: '跨进程约定' }]);
+      await second.close();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });

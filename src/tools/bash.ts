@@ -17,22 +17,29 @@ export class Bash implements Tool {
     required: ['command'],
   };
   private timeout: number;
+  private workspaceRoot: string;
 
-  constructor(timeout = 30000) {
+  constructor(timeout = 30000, workspaceRoot = process.cwd()) {
     this.timeout = timeout;
+    this.workspaceRoot = workspaceRoot;
   }
 
   async execute(args: Record<string, unknown>): Promise<ToolResult> {
     try {
       const { stdout, stderr } = await execAsync(args.command as string, {
         timeout: (args.timeout as number) || this.timeout,
+        cwd: this.workspaceRoot,
       });
-      return { success: true, data: { stdout, stderr } };
+      return { success: true, data: { stdout, stderr, exitCode: 0 } };
     } catch (err) {
       const error = err as Error & { stdout?: string; stderr?: string };
       return {
         success: false,
-        data: { stdout: error.stdout || '', stderr: error.stderr || '' },
+        data: {
+          stdout: error.stdout || '',
+          stderr: error.stderr || '',
+          exitCode: (err as { code?: number }).code ?? 1,
+        },
         error: error.message,
       };
     }

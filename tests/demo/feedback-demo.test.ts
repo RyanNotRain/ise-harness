@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Agent } from '../../src/core/agent.js';
 import { MockLLMProvider } from '../../src/core/mock-llm.js';
+import { TestResultValidator } from '../../src/feedback/test-validator.js';
 
 describe('演示：反馈闭环改变 agent 行为', () => {
   it('注入失败后 agent 应改变下一步动作', async () => {
@@ -76,6 +77,7 @@ describe('演示：反馈闭环改变 agent 行为', () => {
           },
         },
       ],
+      validators: [new TestResultValidator()],
       maxTurns: 5,
     });
 
@@ -85,5 +87,8 @@ describe('演示：反馈闭环改变 agent 行为', () => {
       (m) => m.role === 'tool' && m.content.includes('FAIL')
     );
     expect(toolMsg).toBeDefined();
+    expect(provider.callHistory[1].some(
+      (message) => message.content.includes('[确定性反馈:test_result]')
+    )).toBe(true);
   });
 });

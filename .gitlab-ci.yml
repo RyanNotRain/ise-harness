@@ -1,21 +1,31 @@
 stages:
   - test
-  - demo
+  - build
 
 unit-test:
   stage: test
   image: node:20
   script:
     - npm ci
+    - npm run lint
     - npm test
-  artifacts:
-    paths:
-      - node_modules/
-    expire_in: 1 hour
 
 demo:
-  stage: demo
+  stage: test
   image: node:20
   script:
     - npm ci
     - npx vitest run tests/demo/ --reporter=verbose
+
+package:
+  stage: build
+  image: node:20
+  script:
+    - npm ci
+    - npm pack
+    - npm install --global ./ise-harness-*.tgz
+    - ise-harness --help
+  artifacts:
+    paths:
+      - ise-harness-*.tgz
+    expire_in: 7 days

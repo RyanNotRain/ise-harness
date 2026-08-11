@@ -8,8 +8,8 @@ describe('演示：跨会话记忆存储与检索', () => {
     memory = new SQLiteMemory(':memory:');
   });
 
-  afterAll(() => {
-    memory.close();
+  afterAll(async () => {
+    await memory.close();
   });
 
   it('应存储和检索多轮对话', async () => {
