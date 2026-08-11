@@ -18,7 +18,7 @@
     "LICENSE"
   ],
   "bin": {
-    "ise-harness": "./dist/cli/index.js"
+    "ise-harness": "dist/cli/index.js"
   },
   "engines": {
     "node": ">=20.12"

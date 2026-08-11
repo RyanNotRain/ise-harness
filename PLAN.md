@@ -157,6 +157,6 @@ npm pack
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
 - [x] [GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) 的 `unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
 - [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
-- [ ] 将 npm 包发布到公开 registry。
+- [x] [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 已发布到公开 registry，并完成公网安装、SDK import 与 CLI 烟雾测试。
 - [ ] Render WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和健康检查时间。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
