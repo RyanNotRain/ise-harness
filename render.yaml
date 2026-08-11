@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ise-harness
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run web
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20.12"
+      - key: ISE_API_KEY
+        sync: false
+      - key: ISE_WEB_ACCESS_TOKEN
+        sync: false
