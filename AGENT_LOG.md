@@ -71,6 +71,7 @@
 | 08-11 16:50 | 提交前复验 | npm ci、Vitest、tsc、npm pack | 从锁文件重装依赖后重新执行全部本地完成定义 | 69/69 测试、7/7 机制演示、类型检查、构建与打包全部通过；tarball SHA-1 为 `37865d68f144ae42feb49bafdfab3c0f5dccb599` | `ecc0837` |
 | 08-11 17:00 | Task 19 复核 | 逐条回看课程通用要求 | 原配置只有 `.gitlab-ci.yml`，但 §4.8 还要求 GitHub Actions | 新增同等的 `unit-test`、`demo`、`package` jobs 与 tarball artifact | `6a594b3` |
 | 08-11 17:05 | 安全与发布预检 | rg、Git history、npm registry | 检查当前文件、完整历史、被跟踪的敏感文件、npm 登录和包名 | 未发现真实凭据；`ise-harness` 包名未被公开占用；当前机器未登录 npm | — |
+| 08-11 17:10 | 远程仓库与 PR | GitHub CLI、GitHub Actions | 创建公开仓库，以 `main` 为基线推送独立整改分支，并在 PR 中披露 Agent/人工范围 | [PR #1](https://github.com/RyanNotRain/ise-harness/pull/1) 已创建；两次触发的 `unit-test`、`demo`、`package` 均通过，tarball artifact 已产出 | `8c7e5fa`, [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) |
 
 ### 本轮偏离与教训
 

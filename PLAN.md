@@ -153,9 +153,10 @@ npm pack
 最终提交还必须满足以下外部证据：
 
 - [x] 当前整改已提交到独立分支 `codex/submission-remediation`。
-- [ ] 创建 MR；MR 写明 Agent/人工修改范围以及原流程偏离。
+- [x] 已创建 [PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)，写明 Agent/人工修改范围以及原流程偏离。
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
-- [ ] GitHub Actions（以及 NJU Git 使用的 GitLab CI）中 `unit-test`、`demo`、`package` 最后一次全部通过。
-- [ ] npm tarball 上传为 CI artifact，并按选定策略发布到公开 registry。
+- [x] [GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) 的 `unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
+- [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
+- [ ] 将 npm 包发布到公开 registry。
 - [ ] Render WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和健康检查时间。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。

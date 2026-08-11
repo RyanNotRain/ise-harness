@@ -27,6 +27,7 @@ Browser → HTTPS / Bearer token → WebUI server → Agent loop
 - 公网 URL：**待项目所有者部署后填写**
 - 部署 commit：**待填写**
 - 最后一次健康检查时间：**待填写**
-- 最后一次 CI/CD URL：**待填写**
+- 最后一次提交前 CI/CD：[GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636)，三个 job 全部通过
+- 评审记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
 
-上述四项依赖外部仓库和平台账号，本地实现不能代替真实发布证据。
+前三项部署信息依赖 Render 账号与真实 Secret，不能以本地结果代替。

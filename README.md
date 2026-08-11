@@ -4,6 +4,8 @@
 
 本项目的重点维度是**记忆与上下文管理**：磁盘持久化 SQLite 会话记忆、代码库语义索引、按需检索，以及上下文超限后的历史压缩。项目不依赖 LangChain、AutoGen、CrewAI 等现成 agent 主循环。
 
+公开仓库：[RyanNotRain/ise-harness](https://github.com/RyanNotRain/ise-harness)；整改与评审记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)；最近一次提交前 CI：[GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636)（`unit-test`、`demo`、`package` 全部通过）。
+
 ## 功能与安全边界
 
 - 决策：自研 `Agent.run()` 主循环；支持 OpenAI、Anthropic 和可注入 MockLLM。
