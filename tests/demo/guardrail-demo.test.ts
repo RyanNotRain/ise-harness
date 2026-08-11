@@ -32,6 +32,7 @@ describe('演示：护栏拦截危险动作', () => {
     const executedCommands: string[] = [];
     const agent = new Agent({
       llmProvider: provider,
+      guardrails: [new DangerousCommandGuard()],
       tools: [
         {
           name: 'bash',
@@ -42,15 +43,6 @@ describe('演示：护栏拦截危险动作', () => {
             required: ['command'],
           },
           async execute(args) {
-            const guard = new DangerousCommandGuard();
-            const check = guard.check({ command: args.command as string });
-            if (!check.allowed) {
-              return {
-                success: false,
-                data: null,
-                error: `拦截: ${check.reason}`,
-              };
-            }
             executedCommands.push(args.command as string);
             return { success: true, data: { stdout: 'ok', stderr: '' } };
           },
@@ -62,6 +54,6 @@ describe('演示：护栏拦截危险动作', () => {
     const result = await agent.run('删除所有东西');
     expect(executedCommands).toEqual([]);
     const toolMsg = result.messages.find((m) => m.role === 'tool');
-    expect(toolMsg?.content).toContain('拦截');
+    expect(toolMsg?.content).toContain('护栏拦截');
   });
 });

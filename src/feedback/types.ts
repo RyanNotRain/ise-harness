@@ -7,5 +7,9 @@ export interface Feedback {
 
 export interface Validator {
   name: string;
-  validate(result: { success: boolean; data: unknown; error?: string }): Feedback | Promise<Feedback>;
+  supports?(context: { toolName: string; arguments: Record<string, unknown> }): boolean;
+  validate(
+    result: { success: boolean; data: unknown; error?: string },
+    context?: { toolName: string; arguments: Record<string, unknown> }
+  ): Feedback | Promise<Feedback>;
 }

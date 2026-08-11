@@ -1,5 +1,5 @@
 import type { LLMProvider } from './llm-provider.js';
-import type { ChatMessage, LLMResponse, ToolCall } from './types.js';
+import type { ChatMessage, LLMChatOptions, LLMResponse, ToolCall } from './types.js';
 
 export interface AnthropicProviderOptions {
   apiKey: string;
@@ -15,7 +15,39 @@ export class AnthropicProvider implements LLMProvider {
     this.model = options.model || 'claude-sonnet-4-20250514';
   }
 
-  async chat(messages: ChatMessage[], _options?: Record<string, unknown>): Promise<LLMResponse> {
+  async chat(messages: ChatMessage[], options: LLMChatOptions = {}): Promise<LLMResponse> {
+    const apiMessages = messages
+      .filter((message) => message.role !== 'system')
+      .map((message) => {
+        if (message.role === 'tool') {
+          return {
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: message.toolCallId,
+              content: message.content,
+            }],
+          };
+        }
+        if (message.role === 'assistant' && message.toolCalls?.length) {
+          return {
+            role: 'assistant',
+            content: [
+              ...(message.content ? [{ type: 'text', text: message.content }] : []),
+              ...message.toolCalls.map((call) => ({
+                type: 'tool_use',
+                id: call.id,
+                name: call.name,
+                input: call.arguments,
+              })),
+            ],
+          };
+        }
+        return {
+          role: message.role === 'assistant' ? 'assistant' : 'user',
+          content: message.content,
+        };
+      });
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -25,14 +57,15 @@ export class AnthropicProvider implements LLMProvider {
       },
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 4096,
-        messages: messages
-          .filter(m => m.role !== 'system')
-          .map(m => ({
-            role: m.role === 'assistant' ? 'assistant' : 'user',
-            content: m.content,
-          })),
+        max_tokens: options.maxTokens ?? 4096,
+        messages: apiMessages,
         system: messages.find(m => m.role === 'system')?.content,
+        ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+        ...(options.tools?.length ? { tools: options.tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          input_schema: tool.parameters,
+        })) } : {}),
       }),
     });
 
@@ -42,17 +75,37 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     const data = await response.json() as {
-      content: Array<{ type: string; text?: string }>;
+      content: Array<{
+        type: string;
+        text?: string;
+        id?: string;
+        name?: string;
+        input?: Record<string, unknown>;
+      }>;
       stop_reason: string;
       usage: { input_tokens: number; output_tokens: number };
     };
 
-    const textContent = data.content.find(c => c.type === 'text')?.text || '';
+    const textContent = data.content
+      .filter((part) => part.type === 'text')
+      .map((part) => part.text ?? '')
+      .join('\n');
+    const toolCalls: ToolCall[] = data.content
+      .filter((part) => part.type === 'tool_use')
+      .map((part) => ({
+        id: part.id ?? '',
+        name: part.name ?? '',
+        arguments: part.input ?? {},
+      }));
 
     return {
       content: textContent,
-      toolCalls: [],
-      stopReason: data.stop_reason === 'end_turn' ? 'stop' : 'max_tokens',
+      toolCalls,
+      stopReason: data.stop_reason === 'tool_use'
+        ? 'tool_calls'
+        : data.stop_reason === 'max_tokens'
+          ? 'max_tokens'
+          : 'stop',
       usage: {
         promptTokens: data.usage.input_tokens,
         completionTokens: data.usage.output_tokens,

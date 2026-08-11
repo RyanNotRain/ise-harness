@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { Tool } from './types.js';
 import type { ToolResult } from '../core/types.js';
+import { resolveWorkspacePath } from './workspace.js';
 
 export class ReadFile implements Tool {
   name = 'read_file';
@@ -14,10 +15,11 @@ export class ReadFile implements Tool {
     },
     required: ['path'],
   };
+  constructor(private workspaceRoot = process.cwd()) {}
 
   async execute(args: Record<string, unknown>): Promise<ToolResult> {
     try {
-      const content = await readFile(args.path as string, 'utf-8');
+      const content = await readFile(resolveWorkspacePath(this.workspaceRoot, String(args.path)), 'utf-8');
       const lines = content.split('\n');
       const offset = (args.offset as number) || 1;
       const limit = args.limit as number | undefined;

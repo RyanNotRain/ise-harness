@@ -2,6 +2,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Tool } from './types.js';
 import type { ToolResult } from '../core/types.js';
+import { resolveWorkspacePath } from './workspace.js';
 
 export class WriteFile implements Tool {
   name = 'write_file';
@@ -14,10 +15,11 @@ export class WriteFile implements Tool {
     },
     required: ['path', 'content'],
   };
+  constructor(private workspaceRoot = process.cwd()) {}
 
   async execute(args: Record<string, unknown>): Promise<ToolResult> {
     try {
-      const path = args.path as string;
+      const path = resolveWorkspacePath(this.workspaceRoot, String(args.path));
       const content = args.content as string;
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, content, 'utf-8');

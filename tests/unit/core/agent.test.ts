@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Agent } from '../../../src/core/agent.js';
 import { MockLLMProvider } from '../../../src/core/mock-llm.js';
+import { DangerousCommandGuard } from '../../../src/governance/dangerous-command.js';
+import { TestResultValidator } from '../../../src/feedback/test-validator.js';
 
 describe('Agent', () => {
   it('LLM 返回 stop 时应停机', async () => {
@@ -62,5 +64,66 @@ describe('Agent', () => {
     await agent.run('测试');
     expect(provider.callHistory[0][0].role).toBe('system');
     expect(provider.callHistory[0][0].content).toBe('你是一个编码助手');
+  });
+
+  it('应把工具定义提供给 LLM', async () => {
+    const provider = new MockLLMProvider([{ content: '完成', toolCalls: [], stopReason: 'stop' }]);
+    const agent = new Agent({
+      llmProvider: provider,
+      tools: [{
+        name: 'read_file',
+        description: '读取文件',
+        parameters: { type: 'object' },
+        async execute() { return { success: true, data: '' }; },
+      }],
+    });
+    await agent.run('读取 README');
+    expect(provider.optionHistory[0].tools?.[0].name).toBe('read_file');
+  });
+
+  it('应在主循环中拦截危险动作', async () => {
+    const provider = new MockLLMProvider([
+      {
+        content: '',
+        toolCalls: [{ id: 'danger', name: 'bash', arguments: { command: 'sudo rm -rf /' } }],
+        stopReason: 'tool_calls',
+      },
+      { content: '已停止危险操作', toolCalls: [], stopReason: 'stop' },
+    ]);
+    let executed = false;
+    const agent = new Agent({
+      llmProvider: provider,
+      guardrails: [new DangerousCommandGuard()],
+      tools: [{
+        name: 'bash', description: 'shell', parameters: {},
+        async execute() { executed = true; return { success: true, data: '' }; },
+      }],
+    });
+    const result = await agent.run('删除根目录');
+    expect(executed).toBe(false);
+    expect(result.messages.some((message) => message.content.includes('护栏拦截'))).toBe(true);
+  });
+
+  it('应把确定性失败反馈回灌给下一轮 LLM', async () => {
+    const provider = new MockLLMProvider([
+      {
+        content: '',
+        toolCalls: [{ id: 'test', name: 'run_test', arguments: { command: 'npm test' } }],
+        stopReason: 'tool_calls',
+      },
+      { content: '根据失败反馈修复', toolCalls: [], stopReason: 'stop' },
+    ]);
+    const agent = new Agent({
+      llmProvider: provider,
+      validators: [new TestResultValidator()],
+      tools: [{
+        name: 'run_test', description: '测试', parameters: {},
+        async execute() {
+          return { success: false, data: { stdout: '', stderr: 'FAIL a.test.ts\nAssertionError' } };
+        },
+      }],
+    });
+    await agent.run('修复测试');
+    expect(provider.callHistory[1].some((message) => message.content.includes('确定性反馈'))).toBe(true);
   });
 });

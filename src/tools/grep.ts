@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { Tool } from './types.js';
 import type { ToolResult } from '../core/types.js';
+import { resolveWorkspacePath } from './workspace.js';
 
 export class Grep implements Tool {
   name = 'grep';
@@ -13,11 +14,12 @@ export class Grep implements Tool {
     },
     required: ['path', 'pattern'],
   };
+  constructor(private workspaceRoot = process.cwd()) {}
 
   async execute(args: Record<string, unknown>): Promise<ToolResult> {
     try {
-      const content = await readFile(args.path as string, 'utf-8');
-      const pattern = new RegExp(args.pattern as string);
+      const content = await readFile(resolveWorkspacePath(this.workspaceRoot, String(args.path)), 'utf-8');
+      const pattern = new RegExp(String(args.pattern));
       const lines = content.split('\n');
       const matches: string[] = [];
       for (let i = 0; i < lines.length; i++) {

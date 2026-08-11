@@ -3,6 +3,12 @@ import type { Validator, Feedback } from './types.js';
 export class TestResultValidator implements Validator {
   name = 'test_result';
 
+  supports(context: { toolName: string; arguments: Record<string, unknown> }): boolean {
+    if (context.toolName === 'run_test') return true;
+    return context.toolName === 'bash' && /(?:^|\s)(?:test|vitest|jest|pytest|cargo\s+test|go\s+test)(?:\s|$)/i
+      .test(String(context.arguments.command ?? ''));
+  }
+
   validate(result: { success: boolean; data: unknown; error?: string }): Feedback {
     const stdout = (result.data as { stdout?: string })?.stdout || '';
     const stderr = (result.data as { stderr?: string })?.stderr || '';

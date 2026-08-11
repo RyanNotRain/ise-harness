@@ -1,5 +1,5 @@
 import type { LLMProvider } from './llm-provider.js';
-import type { ChatMessage, LLMResponse, ToolCall } from './types.js';
+import type { ChatMessage, LLMChatOptions, LLMResponse, ToolCall } from './types.js';
 
 export interface OpenAIProviderOptions {
   apiKey: string;
@@ -18,7 +18,29 @@ export class OpenAIProvider implements LLMProvider {
     this.baseURL = options.baseURL || 'https://api.openai.com/v1';
   }
 
-  async chat(messages: ChatMessage[], options?: Record<string, unknown>): Promise<LLMResponse> {
+  async chat(messages: ChatMessage[], options: LLMChatOptions = {}): Promise<LLMResponse> {
+    const apiMessages = messages.map((message) => {
+      if (message.role === 'tool') {
+        return {
+          role: 'tool',
+          content: message.content,
+          tool_call_id: message.toolCallId,
+        };
+      }
+      return {
+        role: message.role,
+        content: message.content,
+        ...(message.toolCalls
+          ? {
+              tool_calls: message.toolCalls.map((call) => ({
+                id: call.id,
+                type: 'function',
+                function: { name: call.name, arguments: JSON.stringify(call.arguments) },
+              })),
+            }
+          : {}),
+      };
+    });
     const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -27,12 +49,17 @@ export class OpenAIProvider implements LLMProvider {
       },
       body: JSON.stringify({
         model: this.model,
-        messages: messages.map(m => ({
-          role: m.role,
-          content: m.content,
-          ...(m.toolCalls ? { tool_calls: m.toolCalls } : {}),
-        })),
-        ...options,
+        messages: apiMessages,
+        ...(options.tools?.length
+          ? {
+              tools: options.tools.map((tool) => ({
+                type: 'function',
+                function: tool,
+              })),
+            }
+          : {}),
+        ...(options.maxTokens ? { max_tokens: options.maxTokens } : {}),
+        ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
       }),
     });
 
@@ -65,7 +92,11 @@ export class OpenAIProvider implements LLMProvider {
     return {
       content: choice.message.content || '',
       toolCalls,
-      stopReason: choice.finish_reason as LLMResponse['stopReason'],
+      stopReason: choice.finish_reason === 'tool_calls'
+        ? 'tool_calls'
+        : choice.finish_reason === 'length'
+          ? 'max_tokens'
+          : 'stop',
       usage: data.usage ? {
         promptTokens: data.usage.prompt_tokens,
         completionTokens: data.usage.completion_tokens,
