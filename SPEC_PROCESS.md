@@ -9,19 +9,19 @@
 brainstorming 阶段，智能体逐轮追问了以下关键问题，每个问题都让我重新审视了设计边界：
 
 **第一轮：重点维度选择**
-智能体问我："你的主要贡献维度是记忆与上下文管理，还是想换一个？" 选项包括治理护栏、反馈闭环、工具分发。我选择了 A（记忆）。这个问题的价值在于让我意识到六个维度中只能有一个深入，其他五个做到"能跑就行"——这个约束直接影响了后续所有设计决策，避免了面面俱到但都不深入的情况。
+智能体问我："你的主要贡献维度是记忆与上下文管理，还是想换一个？" 选项包括治理护栏、反馈闭环、工具分发。我选了 A（记忆）。这个问题让我意识到六个维度中只能有一个深入，其他五个做到"能跑就行"——这个约束直接影响了后续所有设计决策，避免了面面俱到但都不深入的情况。
 
 **第二轮：LLM 供应商**
-智能体问支持哪些 LLM 供应商。我选了 OpenAI + Anthropic。当时觉得覆盖两大主流就够了，但实际实现中 Anthropic 的工具调用没有做完整（只处理了文本响应），这其实是个合理的取舍——毕竟重点是记忆维度，不是多供应商适配。
+智能体问支持哪些 LLM 供应商。我选了 OpenAI + Anthropic。初版 Anthropic 只处理文本响应，最终提交审查认为这会使真实 coding agent 无法调用工具，因此整改阶段补齐了 `tool_use/tool_result` 协议，并用 mock HTTP 测试验证。
 
 **第三轮：分发形态**
 我选了 npm 包。这个决定比较务实——课程要求至少一种分发形态，npm 最轻量。后来验证时发现，没有 Docker 镜像意味着演示起来没那么方便，但在"能用就行"的指导思想下可以接受。
 
 **第四轮：凭据存储**
-选了加密文件 + 主密码。这个方案跨平台、不需要额外依赖，比 macOS Keychain 简单。但实现后发现 `FileCredentialStore` 用的是内存 Map，生产环境需要加文件持久化逻辑——这是当前实现的一个已知缺口。
+选了加密文件 + 主密码。初版 `FileCredentialStore` 实际使用内存 Map，与设计和课程硬性要求不符。最终审查将它定为阻断问题，整改为 scrypt + AES-256-GCM 的磁盘密文、原子写入与 `0600` 权限，并删除默认主密码。
 
 **第五轮：embedding 方案**
-选了 @xenova/transformers。但安装时发现这个包体积太大（sharp 依赖下载超时），最终改成了可选依赖，实际测试用的是 mock embedding 函数。这个决策最终证明是对的：课程要求"机制可单测"，mock embedding 恰好满足这个要求，真实 embedding 反而会让测试依赖网络。
+选了 @xenova/transformers。但安装时发现这个包体积太大（sharp 依赖下载超时），最终改成了可选依赖，实际测试用的是 mock embedding 函数。这个决策后来证明是对的：课程要求"机制可单测"，mock embedding 恰好满足这个要求，真实 embedding 反而会让测试依赖网络。
 
 ### 迭代轮次
 
@@ -35,7 +35,7 @@ brainstorming 阶段，智能体逐轮追问了以下关键问题，每个问题
 
 **第三轮迭代：技术选型调整**
 
-npm install 时发现 better-sqlite3 和 @xenova/transformers 都有安装问题。前者在 Node v26 上编译失败，后者依赖下载超时。于是把 better-sqlite3 换成 sql.js（纯 JS 实现），把 @xenova/transformers 标记为可选依赖。这个调整让我意识到 SPEC 里写的技术选型在实际落地时可能需要灵活调整。
+npm install 时发现 better-sqlite3 和 @xenova/transformers 都有安装问题。前者在 Node v26 上编译失败，后者依赖下载超时。于是把 better-sqlite3 换成 sql.js（纯 JS 实现），把 @xenova/transformers 标记为可选依赖。这让我意识到 SPEC 里写的技术选型在实际落地时可能需要灵活调整。
 
 ### AI 建议的采纳与推翻
 
@@ -77,7 +77,7 @@ brainstorming 技能做得好的地方在于它真的会追问，不会让你停
 
 ### 暴露的 SPEC 缺陷
 
-1. **PLAN 中的代码与实际依赖不一致**：PLAN 中 Task 4 和 Task 5 的代码使用了 better-sqlite3 的 API，但实际安装的是 sql.js。这是一个严重的 spec 缺陷——如果 PLAN 是"施工图纸"，那图纸就是错的。
+1. **PLAN 中的代码与实际依赖不一致**：PLAN 中 Task 4 和 Task 5 的代码使用了 better-sqlite3 的 API，但实际安装的是 sql.js。如果 PLAN 是"施工图纸"，那图纸就是错的。
 2. **缺少技术选型验证步骤**：SPEC 和 PLAN 都没有要求"先验证依赖能安装成功再开始写代码"。
 3. **SPEC 中缺少 sql.js 的说明**：SPEC 的"技术选型"章节写的是 better-sqlite3，但实际用的是 sql.js。
 
@@ -91,8 +91,80 @@ Claude Code 对 Task 4 的解读是"PLAN 写错了，但 SPEC 描述的行为是
 
 **修订 1：** 将 PLAN 中 Task 4 和 Task 5 的代码从 better-sqlite3 API 改为 sql.js API。
 
-**修订 2：** 在 SPEC 的技术选型章节中，将 better-sqlite3 改为 sql.js，并说明替换原因。
+**修订 2：** 在 SPEC 的技术选型章节中，将 better-sqlite3 改为 sql.js，并说明替换原因。初次开发后该修订实际遗漏，直到 2026-08-09 提交前审查才真正同步完成。
 
 **修订 3：** 在 PLAN 的全局约束中增加一条："依赖安装后确认可编译再开始实现"。
 
-**关键认识：** 冷启动验证暴露的最大问题是"PLAN 中的代码不等于实际能跑的代码"。PLAN 是设计文档，不是源码。这个认识让我在后续实现中更加谨慎——每次 subagent 实现前，我都会先确认依赖环境和类型定义是正确的。
+**关键认识：** 冷启动验证暴露的最大问题是"PLAN 中的代码不等于实际能跑的代码"。PLAN 是设计文档，不是源码。这让我在后续实现中更加谨慎——每次 subagent 实现前，我都会先确认依赖环境和类型定义是正确的。
+
+---
+
+## 三、提交前独立审查与第四轮迭代
+
+### 审查触发
+
+2026-08-09，我把通用要求、A 类项目要求和当前仓库交给一个新的 Codex 会话，只要求审查，不允许修改。它实际运行了测试、TypeScript 检查和 npm 打包预览。
+
+审查得出的关键问题不是“缺少几个测试”，而是文档和产品边界不一致：53 个 Vitest 测试通过，但主循环没有连接治理、反馈和记忆；磁盘路径参数被忽略；凭据只是内存 Map；CLI 与 WebUI 不可运行；npm tarball 缺少入口。这个反馈让我推翻了“重点不是该维度，所以最低实现可以只是独立类”的判断。六个维度的最低实现必须在同一个生产循环中工作，不能只在测试中分别出现。
+
+### 修订前后关键 diff
+
+```diff
+- AgentOptions = { llmProvider, tools, systemPrompt, maxTurns }
++ AgentOptions = { llmProvider, tools, memory, codeIndex, contextWindow,
++                  guardrails, hitl, validators, maxFeedbackRetries, onEvent }
+
+- FileCredentialStore.store = new Map()
+- masterPassword ||= "default-dev-password"
++ credentials.enc.json (0600) + scrypt + AES-256-GCM
++ no default master password
+
+- new sql.Database() // dbPath 未使用
++ exists(dbPath) ? new Database(readFile(dbPath)) : new Database()
++ mutation → export → temporary file → atomic rename
+
+- CI: npm test
++ CI: npm run lint → npm test → npm pack → install tarball → CLI smoke test
+```
+
+### 验证结论
+
+- 主循环护栏演示已改为向生产 `Agent` 注入 `DangerousCommandGuard`，测试工具本身不再手工包装护栏。
+- 反馈演示会断言第二轮 MockLLM 上下文真实包含 `[确定性反馈:test_result]`。
+- 记忆单测会关闭实例 A，再用实例 B 从相同磁盘文件恢复数据。
+- OpenAI/Anthropic 使用 mock HTTP 验证工具协议，不消耗真实 key。
+- npm 构建和 tarball 内容由实际命令验证，不再以 README 声明作为完成证据。
+
+### 三轮对话复盘稿
+
+> 说明：以下内容依据现存 SPEC、PLAN、Git 历史和原过程摘要事后重建，用来说明当时的决策逻辑，不是逐字 transcript。若找回原始会话，应以原文替换本节。
+
+#### 复盘一：重点维度怎么选
+
+> **Agent：** 六个维度都要有最低实现，但你打算把哪一块做成主要贡献？如果每块平均用力，最后可能只是六个接口。
+>
+> **我：** 我更想做记忆。coding agent 每次启动都重新认识项目，这个问题我自己用工具时经常碰到。
+>
+> **Agent：** 那就把记忆拆成跨会话存储、代码索引和上下文压缩。工具、治理和反馈保留完整闭环，但不继续扩功能。
+>
+> **我的处理：** 接受这个方向，删除 EditFile、Glob 和 RunTest 等扩展工具，把验收重点放到“重启后能恢复”和“按需取回代码知识”。后来审查发现，我虽然写了三个记忆类，却没有接进 Agent。这也说明“选了重点”不等于重点真的落地。
+
+#### 复盘二：环境变量够不够
+
+> **Agent：** 最简单的 key 配置是读取环境变量，用户自己在 shell 中设置即可。
+>
+> **我：** 课程要求安全录入、更新和清除。只读环境变量不够，而且直接在命令行 `export` 可能进入 history。
+>
+> **Agent：** 可以改成加密文件加主密码，环境变量只作为可选来源。CLI 提供 `key set/view/clear`，查看时只显示状态。
+>
+> **我的处理：** 我推翻了“仅环境变量”的建议，选择 AES-GCM 加密文件。不过初版实现仍是内存 Map，还带默认密码，实际上没有兑现这个决定。提交前整改才补上 scrypt、磁盘持久化、`0600` 权限和隐藏输入。
+
+#### 复盘三：冷启动 agent 为什么停下
+
+> **Claude Code：** PLAN 的 Task 4 使用 better-sqlite3 同步 API，但 package.json 安装的是 sql.js。两套 API 不兼容。我应该按哪一个实现？
+>
+> **我：** 以 sql.js 为准。先不要猜 API，按 SPEC 的行为要求重写存储层，并补跨实例恢复测试。
+>
+> **Claude Code：** 那 PLAN 和 SPEC 的技术选型也要同步，否则后面的 task 仍会照着旧示例写。
+>
+> **我的处理：** 当时只改了部分实现和 PLAN，SPEC 的表格仍残留 better-sqlite3。这个遗漏直到最终独立审查才修正。冷启动验证找到了问题，但我没有把反馈完整落实到所有文档。
