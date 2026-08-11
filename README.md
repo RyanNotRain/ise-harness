@@ -37,13 +37,13 @@ npm install --global ./ise-harness-0.1.0.tgz
 ise-harness --help
 ```
 
-发布到公开 npm registry 后，目标机器可执行：
+版本 `0.1.0` 已发布到公开 [npm registry](https://www.npmjs.com/package/ise-harness)，目标机器可执行：
 
 ```bash
 npm install --global ise-harness
 ```
 
-发布前需由项目所有者完成 `npm login && npm publish --access public`；仓库和 CI 不保存 npm token。
+公开产物 SHA-1 为 `dd11a0dc565801dd044b6909f11e09a3f458f734`。发布后已在全新临时目录从 registry 安装，SDK ESM import 与 `ise-harness --help` 均验证通过。仓库和 CI 不保存 npm token。
 
 ## API Key 安全配置
 

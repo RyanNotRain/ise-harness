@@ -72,6 +72,7 @@
 | 08-11 17:00 | Task 19 复核 | 逐条回看课程通用要求 | 原配置只有 `.gitlab-ci.yml`，但 §4.8 还要求 GitHub Actions | 新增同等的 `unit-test`、`demo`、`package` jobs 与 tarball artifact | `6a594b3` |
 | 08-11 17:05 | 安全与发布预检 | rg、Git history、npm registry | 检查当前文件、完整历史、被跟踪的敏感文件、npm 登录和包名 | 未发现真实凭据；`ise-harness` 包名未被公开占用；当前机器未登录 npm | — |
 | 08-11 17:10 | 远程仓库与 PR | GitHub CLI、GitHub Actions | 创建公开仓库，以 `main` 为基线推送独立整改分支，并在 PR 中披露 Agent/人工范围 | [PR #1](https://github.com/RyanNotRain/ise-harness/pull/1) 已创建；两次触发的 `unit-test`、`demo`、`package` 均通过，tarball artifact 已产出 | `8c7e5fa`, [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) |
+| 08-11 20:25 | npm 公开发布 | npm 2FA、registry 安装 | 首次 publish 暴露 npm 新的强制 2FA 和 bin 规范化要求；先修正元数据，再由项目所有者完成 npm WebAuthn | [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 发布成功；SHA-1 `dd11a0dc565801dd044b6909f11e09a3f458f734`；全新目录安装后 CLI 与 SDK 均通过 | `d564dac` |
 
 ### 本轮偏离与教训
 
