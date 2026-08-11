@@ -60,12 +60,12 @@
 
 | 时间 | Task | 技能/工具 | 关键 prompt/context | 输出与人工判断 | Commit |
 |---|---|---|---|---|---|
-| 08-09 15:22 | 独立审查 | 新 Codex 会话；未加载旧对话 | “根据两份目标项目说明文档，审查我的 agent 项目制作” | 发现主循环未组合机制、凭据/记忆不持久、分发失败、WebUI/PR 证据缺失；决定不能只改文档 | 待提交 |
+| 08-09 15:22 | 独立审查 | 新 Codex 会话；未加载旧对话 | “根据两份目标项目说明文档，审查我的 agent 项目制作” | 发现主循环未组合机制、凭据/记忆不持久、分发失败、WebUI/PR 证据缺失；决定不能只改文档 | `4f88b64` |
 | 08-09 15:35 | Task 14–15 | 代码审查、TypeScript、Vitest | 以 A.4-C“移除真实 LLM 后机制仍可验证”为判据 | 将治理/反馈/记忆接入 Agent；补 OpenAI/Anthropic 工具协议和 mock HTTP 测试 | `d506627` |
 | 08-09 15:40 | Task 16–17 | TDD 修复循环 | 首轮测试暴露磁盘路径未使用、凭据测试写入真实 home | 改为 sql.js 原子持久化和临时目录测试；凭据改为 scrypt + AES-GCM、无默认密码 | `d506627` |
 | 08-09 15:55 | Task 18–19 | build、npm pack、CLI smoke | 用实际 tarball 内容检验 README 的分发声明 | 完成 runtime factory、CLI、WebUI、package exports；`npm run lint` 与 `npm run build` 通过 | `d506627`, `2457e4f` |
 | 08-09 16:00 | WebUI 验证 | Vitest | 沙箱内监听端口返回 EPERM，按工具规则在获批的沙箱外仅运行 WebUI 测试 | `/` 与 `/health` 测试通过；确认失败来自沙箱限制而非服务实现 | `d506627` |
-| 08-09 16:10 | Task 20 | 文档一致性审查 | 不伪造 MR、CI、registry 或公网 URL | 重写 PLAN/README，修订 SPEC/SPEC_PROCESS，列出必须由所有者完成的外部证据 | 待提交 |
+| 08-09 16:10 | Task 20 | 文档一致性审查 | 不伪造 MR、CI、registry 或公网 URL | 重写 PLAN/README，修订 SPEC/SPEC_PROCESS，列出必须由所有者完成的外部证据 | `4f88b64` |
 | 08-09 16:29 | 分发烟雾测试 | npm pack/install | 在 `/tmp` 新目录安装真实 tarball，不复用仓库源码入口 | SDK ESM import 成功，tarball 内 CLI `--help` 成功；确认 `dist`、类型声明和 LICENSE 均已打包 | `2457e4f` |
 | 08-09 16:34 | 全量验证 | Vitest、tsc | 在获批的本地端口权限下运行完整离线测试 | 17 个测试文件、69 个测试全部通过；`npm run lint` 与 `npm run build` 通过 | `d506627`, `2457e4f` |
 

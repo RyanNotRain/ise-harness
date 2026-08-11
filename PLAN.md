@@ -49,7 +49,7 @@ Agent loop
 
 ## 4. 提交前整改任务
 
-以下 task 为最终审查后新增。由于工作区尚未由项目所有者提交，commit 栏暂记“待提交”；提交后必须替换为真实 hash。
+以下 task 为最终审查后新增，commit 栏记录本轮整改的实际提交。
 
 ### Task 14：主循环组合六类机制
 
@@ -121,7 +121,7 @@ Agent loop
 - 文件：`SPEC.md`、`PLAN.md`、`README.md`、`SPEC_PROCESS.md`、`AGENT_LOG.md`、`REFLECTION.md`、`DEPLOYMENT.md`。
 - 验证：搜索过时技术选型和虚假完成声明；逐项核对两份课程要求。
 - 依赖：Task 14–19。
-- 状态：本地完成；commit：待提交。
+- 状态：本地完成；commit：`4f88b64`。
 
 ## 5. 依赖与并行关系
 
@@ -152,9 +152,10 @@ npm pack
 
 最终提交还必须满足以下外部证据：
 
-- [ ] 当前整改提交到独立分支并创建 MR；MR 写明 subagent/人工修改范围。
-- [ ] PLAN 中所有“待提交”替换为真实 commit hash。
+- [x] 当前整改已提交到独立分支 `codex/submission-remediation`。
+- [ ] 创建 MR；MR 写明 Agent/人工修改范围以及原流程偏离。
+- [x] PLAN 中整改任务均已替换为真实 commit hash。
 - [ ] GitLab `unit-test`、`demo`、`package` 最后一次全部通过。
 - [ ] npm tarball 上传为 GitLab artifact，并按选定策略发布到公开 registry。
 - [ ] Render WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和健康检查时间。
-- [ ] 仓库扫描确认无真实 key、`.env`、凭据文件和 npm token。
+- [ ] 最终仓库与历史扫描确认无真实 key、`.env`、凭据文件和 npm token。
