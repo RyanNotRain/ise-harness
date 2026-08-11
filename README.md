@@ -133,7 +133,7 @@ npm run build
 npm pack
 ```
 
-GitLab CI 包含 `unit-test`、`demo` 和 `package` job。每次 push 会执行类型检查、离线测试、构建 npm 包、全局安装 tarball，并运行 CLI 烟雾测试。
+GitHub Actions 与 GitLab CI 都包含 `unit-test`、`demo` 和 `package` job。每次 push 会执行类型检查、离线测试、构建 npm 包、全局安装 tarball，并运行 CLI 烟雾测试；两套 CI 都会保留 npm tarball 作为短期 artifact。
 
 ## 目录结构
 

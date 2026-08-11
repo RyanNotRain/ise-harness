@@ -108,7 +108,7 @@ Agent loop
 ### Task 19：npm 分发和 CI
 
 - 目标：tarball 可构建、安装、导入和运行 CLI。
-- 文件：`package.json`、`package-lock.json`、`.gitlab-ci.yml`、`src/index.ts`、`LICENSE`。
+- 文件：`package.json`、`package-lock.json`、`.gitlab-ci.yml`、`.github/workflows/ci.yml`、`src/index.ts`、`LICENSE`。
 - 失败验证：`tsc` 报错；tarball 缺 `dist`；全局安装后找不到 CLI。
 - 实现：`main/types/exports/files/bin`、prepack 构建、CI 类型检查/测试/打包/全局安装烟雾测试。
 - 验证：`npm run lint && npm run build && npm pack`，在临时目录全局或局部安装 tarball并运行 `ise-harness --help`。
@@ -155,7 +155,7 @@ npm pack
 - [x] 当前整改已提交到独立分支 `codex/submission-remediation`。
 - [ ] 创建 MR；MR 写明 Agent/人工修改范围以及原流程偏离。
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
-- [ ] GitLab `unit-test`、`demo`、`package` 最后一次全部通过。
-- [ ] npm tarball 上传为 GitLab artifact，并按选定策略发布到公开 registry。
+- [ ] GitHub Actions（以及 NJU Git 使用的 GitLab CI）中 `unit-test`、`demo`、`package` 最后一次全部通过。
+- [ ] npm tarball 上传为 CI artifact，并按选定策略发布到公开 registry。
 - [ ] Render WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和健康检查时间。
 - [ ] 最终仓库与历史扫描确认无真实 key、`.env`、凭据文件和 npm token。
