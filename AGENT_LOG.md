@@ -68,6 +68,9 @@
 | 08-09 16:10 | Task 20 | 文档一致性审查 | 不伪造 MR、CI、registry 或公网 URL | 重写 PLAN/README，修订 SPEC/SPEC_PROCESS，列出必须由所有者完成的外部证据 | `4f88b64` |
 | 08-09 16:29 | 分发烟雾测试 | npm pack/install | 在 `/tmp` 新目录安装真实 tarball，不复用仓库源码入口 | SDK ESM import 成功，tarball 内 CLI `--help` 成功；确认 `dist`、类型声明和 LICENSE 均已打包 | `2457e4f` |
 | 08-09 16:34 | 全量验证 | Vitest、tsc | 在获批的本地端口权限下运行完整离线测试 | 17 个测试文件、69 个测试全部通过；`npm run lint` 与 `npm run build` 通过 | `d506627`, `2457e4f` |
+| 08-11 16:50 | 提交前复验 | npm ci、Vitest、tsc、npm pack | 从锁文件重装依赖后重新执行全部本地完成定义 | 69/69 测试、7/7 机制演示、类型检查、构建与打包全部通过；tarball SHA-1 为 `37865d68f144ae42feb49bafdfab3c0f5dccb599` | `ecc0837` |
+| 08-11 17:00 | Task 19 复核 | 逐条回看课程通用要求 | 原配置只有 `.gitlab-ci.yml`，但 §4.8 还要求 GitHub Actions | 新增同等的 `unit-test`、`demo`、`package` jobs 与 tarball artifact | `6a594b3` |
+| 08-11 17:05 | 安全与发布预检 | rg、Git history、npm registry | 检查当前文件、完整历史、被跟踪的敏感文件、npm 登录和包名 | 未发现真实凭据；`ise-harness` 包名未被公开占用；当前机器未登录 npm | — |
 
 ### 本轮偏离与教训
 

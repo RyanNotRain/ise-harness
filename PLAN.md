@@ -113,7 +113,7 @@ Agent loop
 - 实现：`main/types/exports/files/bin`、prepack 构建、CI 类型检查/测试/打包/全局安装烟雾测试。
 - 验证：`npm run lint && npm run build && npm pack`，在临时目录全局或局部安装 tarball并运行 `ise-harness --help`。
 - 依赖：Task 18。
-- 状态：本地构建和打包预览完成；真实 CI 与 registry 发布待外部执行；commit：`2457e4f`。
+- 状态：本地构建、打包和 CLI 烟雾验证完成；真实 CI 与 registry 发布待外部执行；commit：`2457e4f`, `6a594b3`。
 
 ### Task 20：规约、过程与提交文档一致性
 
@@ -158,4 +158,4 @@ npm pack
 - [ ] GitHub Actions（以及 NJU Git 使用的 GitLab CI）中 `unit-test`、`demo`、`package` 最后一次全部通过。
 - [ ] npm tarball 上传为 CI artifact，并按选定策略发布到公开 registry。
 - [ ] Render WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和健康检查时间。
-- [ ] 最终仓库与历史扫描确认无真实 key、`.env`、凭据文件和 npm token。
+- [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
