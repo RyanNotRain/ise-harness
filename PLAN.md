@@ -182,7 +182,7 @@ Agent loop
 - RED：第二轮 MockLLM 上下文缺少工具关联字段；SQLite 重开后字段消失；压缩切点拆开 assistant tool-call 与 tool-result；0.1.2 旧数据库的孤立 tool 消息会进入 provider 请求；多工具调用时验证反馈插入两个 tool 结果之间。
 - GREEN：显式持久化 `tool_calls/tool_call_id` 并迁移旧 schema；恢复时过滤无法配对的遗留 tool 消息；压缩边界向前扩展到完整工具调用组；上下文重建保留协议字段；同批工具结果全部写入后才追加验证反馈。
 - 验证：四轮 RED 分别暴露字段丢失、压缩/中断边界、错误结果未持久化和多工具顺序错误；定向测试最终 36/36 GREEN，并覆盖旧数据库迁移。完整验证为 18 files、95/95 tests、7/7 demos、audit 0、lint/build/pack 通过；0.1.3 公共 registry 冷安装、CLI、跨进程工具协议 smoke 通过。
-- 状态：核心修复 commit `0b717e1` 经 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合入，main CI [#31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722) 全绿；后续 RED/GREEN 为 `166dd16`、`96457a2`。`ise-harness@0.1.3` 已发布，0.1.2 已添加弃用提示。
+- 状态：核心修复 commit `0b717e1` 经 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合入；后续多工具顺序 RED/GREEN 由 [PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合入。最终 main CI [#31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 全绿；`ise-harness@0.1.3` 已发布，0.1.2 已添加弃用提示。
 - 依赖：Task 23；发布 0.1.3 后弃用 0.1.2。
 
 ## 5. 依赖与并行关系
@@ -234,5 +234,5 @@ npm pack
 - [x] Task 21 在独立 worktree 中留下 RED、GREEN、两阶段 review 与 fix loop；最终质量审查为 `APPROVED`，[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) CI 全绿。
 - [x] Task 22 已由 [PR #8](https://github.com/RyanNotRain/ise-harness/pull/8) 合并，main CI [#31578635146](https://github.com/RyanNotRain/ise-harness/actions/runs/31578635146) 通过；0.1.1 已发布且 registry CLI/SDK smoke 通过，但随即发现旧可选依赖漏洞，因此不作为最终推荐版本。
 - [x] Task 23 已由 [PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合并；main CI [#31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 全绿；0.1.2 registry 安装 audit/CLI/SDK smoke 全绿。0.1.1 的弃用标记由 npm 账户 WebAuth 单独确认。
-- [x] Task 24 核心修复已由 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合并；main CI [#31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722) 与 Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功；0.1.3 registry 校验值与本地候选包一致，公共冷安装全绿，0.1.2 已弃用。
+- [x] Task 24 由 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 和 [PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合并；最终 main CI [#31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 与 Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功；0.1.3 registry 校验值与本地候选包一致，公共冷安装全绿，0.1.2 已弃用。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。
