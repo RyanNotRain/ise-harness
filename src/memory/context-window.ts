@@ -40,8 +40,12 @@ export class ContextWindowMemory {
     }
 
     const keep = this.options.keepRecentTurns;
-    const compressible = messages.slice(0, -keep);
-    const recent = messages.slice(-keep);
+    let recentStart = Math.max(0, messages.length - keep);
+    while (recentStart > 0 && messages[recentStart].role === 'tool') {
+      recentStart--;
+    }
+    const compressible = messages.slice(0, recentStart);
+    const recent = messages.slice(recentStart);
 
     if (compressible.length === 0) {
       return { compressed: false, messages };

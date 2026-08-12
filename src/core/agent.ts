@@ -80,6 +80,7 @@ export class Agent {
     const remembered = this.memory
       ? (await this.memory.retrieve(this.sessionId, 20)).reverse()
       : [];
+    const rememberedMessages = this.restoreRememberedMessages(remembered);
     const relevantCode = this.codeIndex ? await this.codeIndex.query(input, 5) : [];
     const events: AgentEvent[] = [];
     const emit = (type: AgentEvent['type'], details: Record<string, unknown>) => {
@@ -87,7 +88,12 @@ export class Agent {
       events.push(event);
       this.onEvent?.(event);
     };
-    emit('memory', { sessionId: this.sessionId, recalledEntries: remembered.length, codeResults: relevantCode.length });
+    emit('memory', {
+      sessionId: this.sessionId,
+      recalledEntries: rememberedMessages.length,
+      skippedInvalidEntries: remembered.length - rememberedMessages.length,
+      codeResults: relevantCode.length,
+    });
     const messages: ChatMessage[] = [
       { role: 'system', content: this.systemPrompt },
       ...(relevantCode.length
@@ -96,7 +102,7 @@ export class Agent {
             content: `按需检索到的代码库知识：\n${relevantCode.map((item) => `--- ${item.filePath}\n${item.content}`).join('\n')}`,
           }]
         : []),
-      ...remembered.map((entry) => ({ role: entry.role, content: entry.content } as ChatMessage)),
+      ...rememberedMessages,
       { role: 'user', content: input },
     ];
     await this.memory?.store(this.sessionId, { role: 'user', content: input });
@@ -145,11 +151,13 @@ export class Agent {
         for (const toolCall of response.toolCalls) {
           const tool = this.tools.get(toolCall.name);
           if (!tool) {
-            messages.push({
+            const missingToolMessage: ChatMessage = {
               role: 'tool',
               content: `错误：工具 "${toolCall.name}" 未找到`,
               toolCallId: toolCall.id,
-            });
+            };
+            messages.push(missingToolMessage);
+            await this.memory?.store(this.sessionId, missingToolMessage);
             continue;
           }
 
@@ -206,11 +214,13 @@ export class Agent {
               }
             }
           } catch (err) {
-            messages.push({
+            const errorMessage: ChatMessage = {
               role: 'tool',
               content: `错误：${(err as Error).message}`,
               toolCallId: toolCall.id,
-            });
+            };
+            messages.push(errorMessage);
+            await this.memory?.store(this.sessionId, errorMessage);
           }
         }
         if (feedbackFailures > this.maxFeedbackRetries) {
@@ -232,7 +242,46 @@ export class Agent {
     return result.messages.map((message) => ({
       role: message.role,
       content: message.content,
+      toolCalls: message.toolCalls,
+      toolCallId: message.toolCallId,
     }));
+  }
+
+  private restoreRememberedMessages(entries: MemoryEntry[]): ChatMessage[] {
+    const restored: ChatMessage[] = [];
+    for (let index = 0; index < entries.length;) {
+      const entry = entries[index];
+      if (entry.role === 'assistant' && entry.toolCalls?.length) {
+        const expectedIds = new Set(entry.toolCalls.map((call) => call.id));
+        const toolResults: ChatMessage[] = [];
+        let cursor = index + 1;
+        while (cursor < entries.length && entries[cursor].role === 'tool') {
+          const result = entries[cursor];
+          if (result.toolCallId && expectedIds.has(result.toolCallId)) {
+            expectedIds.delete(result.toolCallId);
+            toolResults.push({ role: 'tool', content: result.content, toolCallId: result.toolCallId });
+          }
+          cursor++;
+        }
+        if (expectedIds.size === 0) {
+          restored.push({ role: 'assistant', content: entry.content, toolCalls: entry.toolCalls });
+          restored.push(...toolResults);
+        }
+        index = cursor;
+        continue;
+      }
+      if (entry.role === 'tool') {
+        index++;
+        continue;
+      }
+      restored.push({
+        role: entry.role,
+        content: entry.content,
+        ...(entry.role === 'assistant' && entry.toolCalls ? { toolCalls: entry.toolCalls } : {}),
+      });
+      index++;
+    }
+    return restored;
   }
 
   private async checkGuardrails(

@@ -1,6 +1,10 @@
+import type { ToolCall } from '../core/types.js';
+
 export interface MemoryEntry {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
+  toolCalls?: ToolCall[];
+  toolCallId?: string;
   metadata?: Record<string, unknown>;
 }
 
