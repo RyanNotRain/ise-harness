@@ -33,12 +33,14 @@ npm package / local Node WebUI → real Agent loop
 
 ## 最终交付记录
 
-- 公网 URL：**待 GitHub Pages 首次部署后填写**
-- 部署 commit：**待填写**
-- 最后一次页面检查时间：**待填写**
+- 公网 URL：[https://ryannotrain.github.io/ise-harness/](https://ryannotrain.github.io/ise-harness/)
+- 部署 commit：`b7dda6c`
+- 最后一次页面检查时间：2026-08-12 08:50 CST；首页、`styles.css`、`app.js` 均返回 HTTP 200
+- Pages 部署流水线：[GitHub Actions #31551306267](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306267)，成功
 - npm 发布：[ise-harness@0.1.0](https://www.npmjs.com/package/ise-harness)
-- 最近一次 main CI/CD：[GitHub Actions #31496079480](https://github.com/RyanNotRain/ise-harness/actions/runs/31496079480)，三个 job 全部通过
+- 最近一次 main CI/CD：[GitHub Actions #31551306279](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306279)，三个 job 全部通过
 - 主要整改评审：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
 - npm 发布评审：[PR #2](https://github.com/RyanNotRain/ise-harness/pull/2)
+- Pages 部署评审：[PR #3](https://github.com/RyanNotRain/ise-harness/pull/3)
 
-前三项必须在 Pages 实际发布并完成公网检查后填写，不能以本地结果代替。
+公网 URL、部署流水线和 HTTP 检查均来自实际发布结果，不以本地预览代替。
