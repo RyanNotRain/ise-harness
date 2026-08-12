@@ -19,17 +19,21 @@ textarea{box-sizing:border-box;width:100%;min-height:130px;padding:12px}button{m
 pre{white-space:pre-wrap;background:#101827;color:#e7edf8;padding:16px;border-radius:10px;min-height:120px}
 </style></head><body><main><h1>ise-harness WebUI</h1>
 <p>所有工具受工作区边界与治理护栏约束；Web 模式下危险动作默认拒绝。</p>
-<input id="token" type="password" placeholder="部署访问令牌（本地可留空）"><textarea id="prompt" placeholder="输入编码任务"></textarea><button id="run">运行</button><pre id="result">等待任务…</pre>
+<input id="token" type="password" placeholder="WebUI 访问令牌（必填）"><textarea id="prompt" placeholder="输入编码任务"></textarea><button id="run">运行</button><pre id="result">等待任务…</pre>
 <script>document.querySelector('#run').onclick=async()=>{const result=document.querySelector('#result');result.textContent='运行中…';try{const token=document.querySelector('#token').value;const response=await fetch('/api/run',{method:'POST',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:JSON.stringify({prompt:document.querySelector('#prompt').value})});const data=await response.json();result.textContent=data.error||data.output||JSON.stringify(data,null,2)}catch(error){result.textContent=String(error)}};</script>
 </main></body></html>`;
 
 export function startWebServer(options: WebServerOptions): Promise<{ port: number; close(): Promise<void> }> {
+  if (!options.accessToken?.trim()) {
+    return Promise.reject(new Error('启动 WebUI 前必须配置 ISE_WEB_ACCESS_TOKEN'));
+  }
+
   const server = createServer(async (request, response) => {
     try {
       if (request.method === 'GET' && request.url === '/') return send(response, 200, 'text/html; charset=utf-8', PAGE);
       if (request.method === 'GET' && request.url === '/health') return sendJson(response, 200, { ok: true });
       if (request.method === 'POST' && request.url === '/api/run') {
-        if (options.accessToken && request.headers.authorization !== `Bearer ${options.accessToken}`) {
+        if (request.headers.authorization !== `Bearer ${options.accessToken}`) {
           return sendJson(response, 401, { error: '访问令牌无效' });
         }
         const body = await readJson(request);

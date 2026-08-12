@@ -70,6 +70,10 @@ export async function createRuntime(
     validators,
     maxFeedbackRetries: config.feedback.maxRetries,
     sessionId: options.sessionId,
+    llmOptions: {
+      maxTokens: config.model.maxTokens,
+      temperature: config.model.temperature,
+    },
     onEvent: process.env.LOG_LEVEL === 'debug'
       ? (event) => console.error(JSON.stringify(event))
       : undefined,

@@ -1,8 +1,8 @@
 import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, extname, join, relative } from 'node:path';
+import { dirname, extname, join, relative, sep } from 'node:path';
 
 let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
 
@@ -112,7 +112,7 @@ export class CodeIndexMemory {
       for (const entry of await readdir(directory, { withFileTypes: true })) {
         const fullPath = join(directory, entry.name);
         const relativePath = relative(rootPath, fullPath);
-        if (excludePatterns.some((pattern) => relativePath.split('/').includes(pattern))) continue;
+        if (excludePatterns.some((pattern) => relativePath.split(sep).includes(pattern))) continue;
         if (entry.isDirectory()) {
           await visit(fullPath);
           continue;
@@ -181,6 +181,8 @@ export class CodeIndexMemory {
     await mkdir(dirname(this.dbPath), { recursive: true });
     const temporaryPath = `${this.dbPath}.tmp`;
     await writeFile(temporaryPath, db.export(), { mode: 0o600 });
+    await chmod(temporaryPath, 0o600);
     await rename(temporaryPath, this.dbPath);
+    await chmod(this.dbPath, 0o600);
   }
 }

@@ -81,6 +81,19 @@ describe('Agent', () => {
     expect(provider.optionHistory[0].tools?.[0].name).toBe('read_file');
   });
 
+  it('应把声明式 maxTokens 和 temperature 提供给 LLM', async () => {
+    const provider = new MockLLMProvider([{ content: '完成', toolCalls: [], stopReason: 'stop' }]);
+    const agent = new Agent({
+      llmProvider: provider,
+      llmOptions: { maxTokens: 2048, temperature: 0.25 },
+    });
+
+    await agent.run('检查配置');
+
+    expect(provider.optionHistory[0].maxTokens).toBe(2048);
+    expect(provider.optionHistory[0].temperature).toBe(0.25);
+  });
+
   it('应在主循环中拦截危险动作', async () => {
     const provider = new MockLLMProvider([
       {

@@ -36,4 +36,27 @@ describe('真实 LLM provider 协议适配', () => {
     expect(response.stopReason).toBe('tool_calls');
     expect(response.toolCalls).toEqual([{ id: 'tool-1', name: 'grep', arguments: { pattern: 'TODO' } }]);
   });
+
+  it('Anthropic 请求应保留全部 system 上下文与采样配置', async () => {
+    let payload: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      payload = JSON.parse(String(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: 'text', text: '完成' }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 2, output_tokens: 1 },
+      }), { status: 200 });
+    }));
+    const provider = new AnthropicProvider({ apiKey: 'test-key' });
+
+    await provider.chat([
+      { role: 'system', content: '系统规则' },
+      { role: 'system', content: '按需检索到的代码知识' },
+      { role: 'user', content: '检查项目' },
+    ], { maxTokens: 1234, temperature: 0.2 });
+
+    expect(payload.system).toBe('系统规则\n\n按需检索到的代码知识');
+    expect(payload.max_tokens).toBe(1234);
+    expect(payload.temperature).toBe(0.2);
+  });
 });

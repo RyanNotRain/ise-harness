@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WriteFile } from '../../../src/tools/write-file.js';
@@ -27,5 +27,23 @@ describe('工具工作区边界', () => {
     const result = await new WriteFile(root).execute({ path: '../outside.txt', content: 'blocked' });
     expect(result.success).toBe(false);
     expect(result.error).toContain('工作区边界');
+  });
+
+  it('应拒绝通过工作区内符号链接读写外部文件', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'ise-outside-'));
+    try {
+      await writeFile(join(outside, 'secret.txt'), 'outside', 'utf-8');
+      await symlink(outside, join(root, 'linked-outside'));
+
+      const read = await new ReadFile(root).execute({ path: 'linked-outside/secret.txt' });
+      const write = await new WriteFile(root).execute({ path: 'linked-outside/new.txt', content: 'blocked' });
+
+      expect(read.success).toBe(false);
+      expect(read.error).toContain('工作区边界');
+      expect(write.success).toBe(false);
+      expect(write.error).toContain('工作区边界');
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
   });
 });

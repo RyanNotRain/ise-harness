@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SQLiteMemory } from '../../../src/memory/sqlite-memory.js';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -29,10 +29,15 @@ describe('SQLiteMemory', () => {
   });
 
   it('应能存储和检索条目', async () => {
-    await memory.store('session1', { role: 'user', content: '你好' });
+    await memory.store('session1', {
+      role: 'user',
+      content: '你好',
+      metadata: { source: 'unit-test', priority: 2 },
+    });
     const entries = await memory.retrieve('session1', 10);
     expect(entries.length).toBe(1);
     expect(entries[0].content).toBe('你好');
+    expect(entries[0].metadata).toEqual({ source: 'unit-test', priority: 2 });
   });
 
   it('应按 limit 限制检索数量', async () => {
@@ -72,15 +77,46 @@ describe('SQLiteMemory', () => {
     expect(summary).toBe('这是一个测试会话');
   });
 
+  it('应拒绝超过 100KB 的单条记忆', async () => {
+    await expect(memory.store('oversized', {
+      role: 'user',
+      content: 'x'.repeat(100 * 1024 + 1),
+    })).rejects.toThrow('100KB');
+  });
+
+  it('单会话应只保留最新 10000 条记忆', async () => {
+    const bounded = new SQLiteMemory(':memory:');
+    try {
+      for (let index = 0; index <= 10_000; index += 1) {
+        await bounded.store('bounded', { role: 'user', content: `消息 ${index}` });
+      }
+      const entries = await bounded.retrieve('bounded');
+      expect(entries).toHaveLength(10_000);
+      expect(entries[0].content).toBe('消息 10000');
+      expect(entries.at(-1)?.content).toBe('消息 1');
+    } finally {
+      await bounded.close();
+    }
+  }, 30_000);
+
   it('关闭后新实例应能恢复磁盘记忆', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'ise-memory-'));
     const path = join(directory, 'memory.db');
     try {
       const first = new SQLiteMemory(path);
-      await first.store('persistent', { role: 'user', content: '跨进程约定' });
+      await first.store('persistent', {
+        role: 'user',
+        content: '跨进程约定',
+        metadata: { category: 'decision' },
+      });
       await first.close();
+      expect((await stat(path)).mode & 0o777).toBe(0o600);
       const second = new SQLiteMemory(path);
-      expect(await second.retrieve('persistent')).toEqual([{ role: 'user', content: '跨进程约定' }]);
+      expect(await second.retrieve('persistent')).toEqual([{
+        role: 'user',
+        content: '跨进程约定',
+        metadata: { category: 'decision' },
+      }]);
       await second.close();
     } finally {
       await rm(directory, { recursive: true, force: true });

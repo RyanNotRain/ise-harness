@@ -1,5 +1,5 @@
 import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Memory, MemoryEntry, Decision } from './types.js';
@@ -46,10 +46,17 @@ export class SQLiteMemory implements Memory {
         session_id TEXT NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        metadata TEXT,
         timestamp TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (session_id) REFERENCES sessions(id)
       )
     `);
+    const schemaRows = this.db.exec('PRAGMA table_info(entries)') as Array<{ values: unknown[][] }>;
+    const entryColumns = schemaRows[0]?.values
+      .map((column) => String(column[1])) ?? [];
+    if (!entryColumns.includes('metadata')) {
+      this.db.run('ALTER TABLE entries ADD COLUMN metadata TEXT');
+    }
     this.db.run(`
       CREATE TABLE IF NOT EXISTS decisions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,12 +76,18 @@ export class SQLiteMemory implements Memory {
 
   async store(sessionId: string, entry: MemoryEntry): Promise<void> {
     return this.enqueueOperation(async () => {
-      if (Buffer.byteLength(entry.content, 'utf-8') > 100 * 1024) {
+      const metadata = entry.metadata === undefined ? null : JSON.stringify(entry.metadata);
+      if (Buffer.byteLength(entry.content, 'utf-8') + Buffer.byteLength(metadata ?? '', 'utf-8') > 100 * 1024) {
         throw new Error('单条记忆不能超过 100KB');
       }
       const db = await this.ensureInit();
       db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
-      db.run('INSERT INTO entries (session_id, role, content) VALUES (?, ?, ?)', [sessionId, entry.role, entry.content]);
+      db.run('INSERT INTO entries (session_id, role, content, metadata) VALUES (?, ?, ?, ?)', [
+        sessionId,
+        entry.role,
+        entry.content,
+        metadata,
+      ]);
       db.run("UPDATE sessions SET updated_at = datetime('now') WHERE id = ?", [sessionId]);
       db.run(`DELETE FROM entries WHERE id IN (
         SELECT id FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT -1 OFFSET 10000
@@ -88,14 +101,21 @@ export class SQLiteMemory implements Memory {
       const db = await this.ensureInit();
       const results: MemoryEntry[] = [];
       const sql = limit
-        ? 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
-        : 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC';
+        ? 'SELECT role, content, metadata FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
+        : 'SELECT role, content, metadata FROM entries WHERE session_id = ? ORDER BY id DESC';
       const params = limit ? [sessionId, limit] : [sessionId];
       const stmt = db.prepare(sql);
       stmt.bind(params);
       while (stmt.step()) {
         const row = stmt.getAsObject();
-        results.push({ role: row.role as MemoryEntry['role'], content: row.content as string });
+        const metadata = typeof row.metadata === 'string'
+          ? JSON.parse(row.metadata) as Record<string, unknown>
+          : undefined;
+        results.push({
+          role: row.role as MemoryEntry['role'],
+          content: row.content as string,
+          ...(metadata === undefined ? {} : { metadata }),
+        });
       }
       stmt.free();
       return results;
@@ -185,6 +205,8 @@ export class SQLiteMemory implements Memory {
     await mkdir(dirname(this.dbPath), { recursive: true });
     const temporaryPath = `${this.dbPath}.tmp`;
     await writeFile(temporaryPath, db.export(), { mode: 0o600 });
+    await chmod(temporaryPath, 0o600);
     await rename(temporaryPath, this.dbPath);
+    await chmod(this.dbPath, 0o600);
   }
 }

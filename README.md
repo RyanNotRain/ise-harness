@@ -6,6 +6,8 @@
 
 公开仓库：[RyanNotRain/ise-harness](https://github.com/RyanNotRain/ise-harness)；主体整改记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)；Task 21 的 worktree/TDD/双评审补充记录：[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7)。两条 PR 的 `unit-test`、`demo`、`package` 均通过。
 
+课程要求逐项状态和仍需课程平台权限完成的最后一步见 [`SUBMISSION_CHECKLIST.md`](./SUBMISSION_CHECKLIST.md)。
+
 ## 功能与安全边界
 
 - 决策：自研 `Agent.run()` 主循环；支持 OpenAI、Anthropic 和可注入 MockLLM。
@@ -33,17 +35,17 @@ npm ci
 npm test
 npm run lint
 npm pack
-npm install --global ./ise-harness-0.1.0.tgz
+npm install --global ./ise-harness-0.1.1.tgz
 ise-harness --help
 ```
 
-版本 `0.1.0` 已发布到公开 [npm registry](https://www.npmjs.com/package/ise-harness)，目标机器可执行：
+公开 npm registry 上已有 `0.1.0`；包含 Task 22 修复的 `0.1.1` 将从最终 main 发布。目标机器可执行：
 
 ```bash
 npm install --global ise-harness
 ```
 
-公开产物 SHA-1 为 `dd11a0dc565801dd044b6909f11e09a3f458f734`。发布后已在全新临时目录从 registry 安装，SDK ESM import 与 `ise-harness --help` 均验证通过。仓库和 CI 不保存 npm token。
+历史 `0.1.0` 产物 SHA-1 为 `dd11a0dc565801dd044b6909f11e09a3f458f734`，并已在全新临时目录验证 SDK ESM import 与 `ise-harness --help`。`0.1.1` 的最终 SHA 和 smoke 结果只在实际发布后记录。仓库和 CI 不保存 npm token。
 
 ## API Key 安全配置
 
@@ -110,7 +112,7 @@ GitHub Pages 由 [pages.yml](./.github/workflows/pages.yml) 自动部署，源�
 ISE_WEB_ACCESS_TOKEN="请使用随机长令牌" npm run web
 ```
 
-打开 `http://localhost:3210`。`GET /health` 用于部署健康检查；`POST /api/run` 在配置访问令牌后要求 `Authorization: Bearer <token>`。
+打开 `http://localhost:3210`。访问令牌是强制项：未设置 `ISE_WEB_ACCESS_TOKEN` 时后端拒绝启动。`GET /health` 用于部署健康检查；`POST /api/run` 要求 `Authorization: Bearer <token>`。
 
 仓库保留 [render.yaml](./render.yaml) 作为可选的真实后端部署模板。若使用云后端，应在平台控制台安全设置 `ISE_API_KEY` 和 `ISE_WEB_ACCESS_TOKEN`，不要提交真实值；课程公开 Pages 演示不需要任何 Secret。
 
@@ -141,7 +143,7 @@ npm pack
 
 GitHub Actions 与 GitLab CI 都包含 `unit-test`、`demo` 和 `package` job。每次 push 会执行类型检查、离线测试、构建 npm 包、全局安装 tarball，并运行 CLI 烟雾测试；两套 CI 都会保留 npm tarball 作为短期 artifact。
 
-提交前还针对记忆并发做了一个独立的 Superpowers/TDD 补充任务。旧实现在 25 个并发 `store()` 时会争用同一个临时文件；本次修复留下了单独的 RED、GREEN、spec review、quality review 和两轮 fix commit。过程材料在 [`evidence/process-remediation/`](./evidence/process-remediation/)，最终本地结果为 18/18 个测试文件、77/77 个测试通过。该任务只保证同一个 `SQLiteMemory` 实例内的调用顺序，不提供跨进程文件锁。
+提交前针对记忆并发做了一个独立的 Superpowers/TDD 补充任务。旧实现在 25 个并发 `store()` 时会争用同一个临时文件；该任务留下了单独的 RED、GREEN、spec review、quality review 和两轮 fix commit，过程材料在 [`evidence/process-remediation/`](./evidence/process-remediation/)。之后的 Task 22 又逐条复核课程要求，新增了安全、配置和重点维度边界测试。当前数字以最新 CI 和 `SUBMISSION_CHECKLIST.md` 为准。SQLiteMemory 只保证同一个实例内的调用顺序，不提供跨进程文件锁。
 
 ## 目录结构
 

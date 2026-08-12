@@ -1,6 +1,6 @@
 # SPEC.md — ise-harness: Coding Agent Harness
 
-> 版本：0.1.0
+> 文档基线：0.1.x
 > 重点维度：记忆与上下文管理
 
 ---
@@ -77,8 +77,9 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 #### 3.2.1 `SQLiteMemory`（跨会话记忆）
 - 使用 sql.js 的 SQLite 格式存储对话历史；非 `:memory:` 路径在每次写操作后原子导出到磁盘
 - 表结构：
-  - `sessions`: session_id, created_at, summary, metadata
-  - `entries`: id, session_id, role, content, timestamp
+  - `sessions`: id, created_at, updated_at, summary
+  - `entries`: id, session_id, role, content, metadata(JSON，可空), timestamp
+  - `decisions`: id, session_id, context, decision, rationale, timestamp
 - 边界：单条目最大 100KB，单会话最大 10000 条
 
 #### 3.2.2 `CodeIndexMemory`（代码库知识索引）
@@ -173,7 +174,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - `key set/view/update/clear`：管理加密凭据，状态查询不回显明文
 - `run`：加载配置、凭据和完整运行时，执行一次编码任务
 - `index`：使用可选本地 embedding 建立代码索引
-- `web`：启动 WebUI 与 `/health`；配置 `ISE_WEB_ACCESS_TOKEN` 后，`POST /api/run` 必须携带 Bearer token
+- `web`：只有配置了 `ISE_WEB_ACCESS_TOKEN` 才允许启动 WebUI；`POST /api/run` 必须携带匹配的 Bearer token
 - Web 模式没有交互式 HITL，所有被拦截动作默认拒绝
 
 ---
@@ -184,7 +185,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - 主循环不得在单轮中重复初始化数据库或 embedding 模型
 - 相同哈希的文件不得重复生成 embedding
 - 上下文超过配置阈值时必须压缩旧历史，避免无限增长
-- 本项目不承诺固定毫秒指标；性能受设备、WASM 与本地模型影响，提交前记录演示设备的实测值
+- 本项目不承诺固定毫秒指标；性能受设备、WASM 与本地模型影响，验收以不重复初始化/embedding、边界测试和可重复演示为准
 
 ### 4.2 安全（凭据威胁模型）
 
@@ -253,7 +254,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 |------|------|---------|
 | sql.js | SQLite/WASM 持久化记忆存储 | 文件系统 JSON |
 | OpenAI API / Anthropic API | LLM 调用 | 本地 Ollama |
-| @xenova/transformers | 本地 embedding 生成 | OpenAI embedding API |
+| @xenova/transformers | 本地 embedding 生成 | 用户注入实现 `Embedder` 接口的适配器 |
 
 ---
 
@@ -441,7 +442,7 @@ interface HarnessConfig {
 | Mock LLM | 替换 MockLLMProvider 后，所有核心测试通过 |
 | 凭据管理 | key set → key view（不显示明文）→ key clear 流程完整 |
 | 分发 | `npm pack` → 全局安装 tarball → `ise-harness --help` 可运行 |
-| WebUI | Pages 公网 URL 返回 200 并可运行三项 MockLLM 演示；本地 Node WebUI 的 `/health` 返回 200，配置访问令牌时未授权 `/api/run` 返回 401 |
+| WebUI | Pages 公网 URL 返回 200 并可运行三项 MockLLM 演示；本地 Node WebUI 未配置访问令牌时拒绝启动，已配置时 `/health` 返回 200 且未授权 `/api/run` 返回 401 |
 
 ---
 
@@ -450,7 +451,7 @@ interface HarnessConfig {
 | 风险 | 影响 | 缓解措施 |
 |------|------|---------|
 | @xenova/transformers 体积大 | 打包体积增大 | 作为可选依赖，用户可选择不启用代码索引 |
-| 本地 embedding 质量不足 | 代码检索不准确 | 支持用户配置外部 embedding API |
+| 本地 embedding 质量不足 | 代码检索不准确 | SDK 用户可注入实现 `Embedder` 接口的替代适配器；CLI 暂无外部 embedding 配置项 |
 | 上下文窗口压缩丢失关键信息 | agent 忘记重要上下文 | 保留最近 5 轮对话的完整内容，仅压缩更早的历史 |
 | 加密文件方案依赖主密码安全性 | 主密码泄露导致 key 泄露 | 无默认密码、隐藏录入、限制文件权限；生产可迁移系统钥匙串 |
 | shell 规则不能覆盖所有混淆语法 | 危险动作漏报 | 工作区隔离、默认拒绝 HITL、公网模式禁止批准，并建议容器/低权限用户 |
