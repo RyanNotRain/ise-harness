@@ -84,6 +84,7 @@
 | 08-12 11:15 | 冷启动实现重试 | Claude Code `test-driven-development` | 同一 session 切到独立 RED worktree，要求实际实现且禁读过程文档 | 三次请求都因 Claude API 预扣额度不足返回 403，未读/改源码；没有把失败写成“实现完成” | [原始节选](./evidence/process-remediation/cold-start-transcript.md) |
 | 08-12 11:50 | Task 21 完成分支 | `finishing-a-development-branch`、GitHub Actions | 合入最新 main 后只保留 13 个 Task 21 相关文件；PR 说明逐项标注 agent/人工范围 | [PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) 创建；`unit-test`、`demo`、`package` 全部通过 | [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31561202386) |
 | 08-12 15:20 | Task 22 要求审查 | 两份课程说明、独立 worktree、TDD | 逐条核对 SPEC/PLAN/代码/测试/发布物；不把历史缺失的 PR 或 NJU CI 写成已完成 | 六项问题先 RED 后 GREEN：符号链接逃逸、凭据目录权限、配置未透传、Anthropic system 丢失、Web token 可选、metadata 丢失；补重点边界特征测试；18 files、85 tests、7 demos、lint/build 全绿 | `8be7006` |
+| 08-12 17:55 | 0.1.2 安全发布修复 | registry smoke、npm audit、TDD | 0.1.1 全新安装暴露旧 Xenova 依赖链 5 high/1 critical；后继 HF 包也有 4 high，不用参数绕过 | 先以失败测试定义内置 hashing embedder，移除模型运行时依赖，补 `@types/node`，CI 加 production audit；完整 audit 0、18 files/86 tests 全绿 | 待 PR |
 
 ### 本轮偏离与教训
 

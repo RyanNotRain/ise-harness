@@ -84,7 +84,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 
 #### 3.2.2 `CodeIndexMemory`（代码库知识索引）
 - 扫描项目文件，提取文件内容
-- 使用 `@xenova/transformers` 生成本地 embedding 向量
+- 默认使用仓库实现的确定性 hashing embedding；SDK 可注入其他 `Embedder`
 - 按用户查询执行语义检索（余弦相似度排序）
 - 排除 node_modules、dist、.git 等目录
 - 支持增量更新（通过文件哈希判断是否变更）
@@ -235,7 +235,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 │  │          Memory Subsystem (FOCUS)            │     │
 │  │  ┌──────────┐ ┌────────────┐ ┌───────────┐  │     │
 │  │  │ SQLite   │ │ Code Index │ │ Context    │  │     │
-│  │  │ Memory   │ │ (Xenova)   │ │ Window Mgr │  │     │
+│  │  │ Memory   │ │ (Hashing)  │ │ Window Mgr │  │     │
 │  │  └──────────┘ └────────────┘ └───────────┘  │     │
 │  └──────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────┘
@@ -254,7 +254,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 |------|------|---------|
 | sql.js | SQLite/WASM 持久化记忆存储 | 文件系统 JSON |
 | OpenAI API / Anthropic API | LLM 调用 | 本地 Ollama |
-| @xenova/transformers | 本地 embedding 生成 | 用户注入实现 `Embedder` 接口的适配器 |
+| Node.js `crypto` | 默认 hashing embedding | 用户注入实现 `Embedder` 接口的适配器 |
 
 ---
 
@@ -366,7 +366,7 @@ interface HarnessConfig {
 | 测试 | Vitest | 快速、兼容 Jest API、ESM 原生支持 |
 | 数据库 | sql.js | 无原生编译依赖，可导出标准 SQLite 数据库 |
 | 凭据存储 | scrypt + AES-256-GCM 加密文件 | 跨平台、密文认证、无需硬编码默认密码 |
-| 本地 Embedding | @xenova/transformers | 纯 JS 实现、无需 Python、本地运行 |
+| 本地 Embedding | 自研 signed feature hashing | 无模型下载、确定性、可离线测试；用检索质量换取安全与可复现性 |
 | LLM 客户端 | 原生 fetch + 自研协议适配 | 仅使用供应商单次 API，不引入现成 agent runner |
 | 分发 | npm | 覆盖开发者 SDK 场景 |
 | 部署 | GitHub Pages + 可选 Node WebUI | Pages 免费且不需要银行卡，用无凭据 MockLLM 安全展示机制；真实 LLM 能力由本地 npm 包提供 |
@@ -450,7 +450,7 @@ interface HarnessConfig {
 
 | 风险 | 影响 | 缓解措施 |
 |------|------|---------|
-| @xenova/transformers 体积大 | 打包体积增大 | 作为可选依赖，用户可选择不启用代码索引 |
+| 默认 hashing embedding 语义能力有限 | 同义词或跨语言代码检索不准确 | SDK 用户可注入更高质量 `Embedder`；验收测试使用可控向量 |
 | 本地 embedding 质量不足 | 代码检索不准确 | SDK 用户可注入实现 `Embedder` 接口的替代适配器；CLI 暂无外部 embedding 配置项 |
 | 上下文窗口压缩丢失关键信息 | agent 忘记重要上下文 | 保留最近 5 轮对话的完整内容，仅压缩更早的历史 |
 | 加密文件方案依赖主密码安全性 | 主密码泄露导致 key 泄露 | 无默认密码、隐藏录入、限制文件权限；生产可迁移系统钥匙串 |

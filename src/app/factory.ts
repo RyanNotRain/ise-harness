@@ -5,7 +5,7 @@ import { OpenAIProvider } from '../core/openai-provider.js';
 import { AnthropicProvider } from '../core/anthropic-provider.js';
 import type { HarnessConfig } from '../config/types.js';
 import { SQLiteMemory } from '../memory/sqlite-memory.js';
-import { CodeIndexMemory, TransformersEmbedder } from '../memory/code-index.js';
+import { CodeIndexMemory, HashingEmbedder } from '../memory/code-index.js';
 import { ContextWindowMemory } from '../memory/context-window.js';
 import { ReadFile } from '../tools/read-file.js';
 import { WriteFile } from '../tools/write-file.js';
@@ -42,7 +42,7 @@ export async function createRuntime(
   const memoryPath = resolve(workspaceRoot, config.memory.path);
   const memory = new SQLiteMemory(memoryPath);
   const codeIndex = config.memory.codeIndex.enabled
-    ? new CodeIndexMemory(`${memoryPath}.code-index`, { embedder: new TransformersEmbedder() })
+    ? new CodeIndexMemory(`${memoryPath}.code-index`, { embedder: new HashingEmbedder() })
     : undefined;
   const contextWindow = new ContextWindowMemory(config.memory.contextWindow);
   const tools = createTools(config.tools, workspaceRoot);

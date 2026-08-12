@@ -7,7 +7,7 @@ import { loadConfig } from '../config/loader.js';
 import { defaultConfig } from '../config/defaults.js';
 import { createRuntime } from '../app/factory.js';
 import { startWebServer } from '../app/web-server.js';
-import { CodeIndexMemory, TransformersEmbedder } from '../memory/code-index.js';
+import { CodeIndexMemory, HashingEmbedder } from '../memory/code-index.js';
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
   const command = args[0];
@@ -69,7 +69,7 @@ async function indexWorkspace(): Promise<void> {
   const workspaceRoot = resolve(config.workspaceRoot);
   const codeIndex = new CodeIndexMemory(
     `${resolve(workspaceRoot, config.memory.path)}.code-index`,
-    { embedder: new TransformersEmbedder() }
+    { embedder: new HashingEmbedder() }
   );
   try {
     const count = await codeIndex.indexDirectory(workspaceRoot, {

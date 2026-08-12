@@ -165,6 +165,15 @@ Agent loop
 - 验证：`npm run lint`、18/18 files 与 85/85 tests、7/7 demos、`npm run build` 均通过。
 - 依赖：Task 21 与两份课程要求；本 task 完成后才更新最终提交文档与发布版本。
 
+### Task 23：默认安装依赖安全与 0.1.2 发布
+
+- 目标：修复 0.1.1 registry smoke 暴露的生产依赖漏洞，同时保留开箱可用的离线代码索引。
+- 文件：`src/memory/code-index.ts`、`src/app/factory.ts`、`src/cli/index.ts`、`package*.json`、CI 与相关文档/测试。
+- RED：`@xenova/transformers` 依赖链的 production audit 为 5 high/1 critical；官方后继包实测仍有 4 high；`HashingEmbedder` 测试先因类不存在失败。
+- GREEN：自研 signed feature hashing embedding，无模型下载或第三方 embedding 依赖；SDK 仍允许注入高质量 `Embedder`；显式加入 `@types/node` 保证干净安装可构建。
+- 验证：完整 `npm audit` 0 漏洞；18/18 files、86/86 tests、7/7 demos、lint/build/pack 通过；CI 加 `npm audit --omit=dev`。
+- 依赖：Task 22、0.1.1 registry smoke；发布 0.1.2 后弃用 0.1.1。
+
 ## 5. 依赖与并行关系
 
 ```text
@@ -208,5 +217,6 @@ npm pack
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
 - [x] Task 21 在独立 worktree 中留下 RED、GREEN、两阶段 review 与 fix loop；最终质量审查为 `APPROVED`，[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) CI 全绿。
-- [ ] Task 22 创建 PR、通过 main CI，并将包含最终修复的 `ise-harness@0.1.1` 发布后完成 registry smoke；执行前不把预期结果写成完成。
+- [x] Task 22 已由 [PR #8](https://github.com/RyanNotRain/ise-harness/pull/8) 合并，main CI [#31578635146](https://github.com/RyanNotRain/ise-harness/actions/runs/31578635146) 通过；0.1.1 已发布且 registry CLI/SDK smoke 通过，但随即发现旧可选依赖漏洞，因此不作为最终推荐版本。
+- [ ] Task 23 通过 PR/main CI，发布 0.1.2，registry 安装 audit/CLI/SDK smoke 全绿，并弃用有漏洞依赖链的 0.1.1。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。

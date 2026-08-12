@@ -24,7 +24,7 @@
 - Node.js 20.12 或更高版本（使用内置 `.env` 加载）
 - npm 10 或兼容版本
 - OpenAI 或 Anthropic API key
-- 可选代码索引需要 `@xenova/transformers`，首次加载模型会占用更多磁盘与时间
+- 代码索引默认使用无外部模型的确定性 hashing embedding；SDK 可注入自定义 `Embedder` 提升语义质量
 
 ## 获取与分发
 
@@ -35,7 +35,7 @@ npm ci
 npm test
 npm run lint
 npm pack
-npm install --global ./ise-harness-0.1.1.tgz
+npm install --global ./ise-harness-0.1.2.tgz
 ise-harness --help
 ```
 
@@ -174,7 +174,6 @@ tests/
 ## 第三方依赖与许可证
 
 - `sql.js`：MIT License，用于 SQLite/WASM 存储。
-- `@xenova/transformers`：Apache-2.0，作为可选本地 embedding 依赖。
 - TypeScript、Vitest、tsx：各自遵循其上游开源许可证，仅用于开发与测试。
 
 项目自身使用 [MIT License](./LICENSE)。
