@@ -1,7 +1,9 @@
 # 最终提交核对表
 
-> 核对日期：2026-08-12  
-> 对照文件：《AI4SE 期末项目 · 通用要求》《AI4SE Final Project A · Coding Agent Harness》  
+> 核对日期：2026-08-12
+>
+> 对照文件：《AI4SE 期末项目 · 通用要求》《AI4SE Final Project A · Coding Agent Harness》
+>
 > 判定口径：只把仓库内或公开平台上可复核的事实标为完成，不用补写材料替代不存在的历史。
 
 ## 1. 交付物与工程要求
