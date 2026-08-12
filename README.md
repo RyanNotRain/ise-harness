@@ -39,13 +39,13 @@ npm install --global ./ise-harness-0.1.1.tgz
 ise-harness --help
 ```
 
-公开 npm registry 上已有 `0.1.0`；包含 Task 22 修复的 `0.1.1` 将从最终 main 发布。目标机器可执行：
+公开 npm registry 提供稳定版本；目标机器可执行：
 
 ```bash
 npm install --global ise-harness
 ```
 
-历史 `0.1.0` 产物 SHA-1 为 `dd11a0dc565801dd044b6909f11e09a3f458f734`，并已在全新临时目录验证 SDK ESM import 与 `ise-harness --help`。`0.1.1` 的最终 SHA 和 smoke 结果只在实际发布后记录。仓库和 CI 不保存 npm token。
+每个版本的实际 SHA 和 registry smoke 结果记录在 [`DEPLOYMENT.md`](./DEPLOYMENT.md)；仓库和 CI 不保存 npm token。
 
 ## API Key 安全配置
 
