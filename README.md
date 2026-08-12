@@ -98,7 +98,11 @@ console.log(result.haltReason);
 
 ## WebUI 与部署
 
-本地启动：
+课程提交使用 GitHub Pages 托管确定性 MockLLM 演示，页面不收集 API key，也不会执行 shell。它可以交互展示危险命令拦截、测试反馈回灌和跨刷新浏览器演示记忆；完整的真实 LLM、加密凭据、工作区工具与 sql.js 记忆仍由 npm 包在目标机器运行。
+
+GitHub Pages 由 [pages.yml](./.github/workflows/pages.yml) 自动部署，源码位于 [web-demo/](./web-demo/)。公网地址在首次部署完成后回填到本节和 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+
+完整 Node WebUI 仍可在本地启动：
 
 ```bash
 ISE_WEB_ACCESS_TOKEN="请使用随机长令牌" npm run web
@@ -106,9 +110,7 @@ ISE_WEB_ACCESS_TOKEN="请使用随机长令牌" npm run web
 
 打开 `http://localhost:3210`。`GET /health` 用于部署健康检查；`POST /api/run` 在配置访问令牌后要求 `Authorization: Bearer <token>`。
 
-仓库包含 [render.yaml](./render.yaml)。部署时在 Render 控制台安全设置 `ISE_API_KEY` 和 `ISE_WEB_ACCESS_TOKEN`，不要提交真实值。详细步骤见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
-
-**最终公网地址：部署后在此填写，并同时更新 DEPLOYMENT.md。**
+仓库保留 [render.yaml](./render.yaml) 作为可选的真实后端部署模板。若使用云后端，应在平台控制台安全设置 `ISE_API_KEY` 和 `ISE_WEB_ACCESS_TOKEN`，不要提交真实值；课程公开 Pages 演示不需要任何 Secret。
 
 ## 机制演示
 

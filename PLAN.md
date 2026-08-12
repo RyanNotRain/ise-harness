@@ -158,5 +158,5 @@ npm pack
 - [x] [GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) 的 `unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
 - [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
 - [x] [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 已发布到公开 registry，并完成公网安装、SDK import 与 CLI 烟雾测试。
-- [ ] Render WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和健康检查时间。
+- [ ] GitHub Pages MockLLM WebUI 部署成功，README/DEPLOYMENT 写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
