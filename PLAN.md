@@ -155,7 +155,7 @@ npm pack
 - [x] 当前整改已提交到独立分支 `codex/submission-remediation`。
 - [x] 已创建 [PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)，写明 Agent/人工修改范围以及原流程偏离。
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
-- [x] [GitHub Actions #31551819071](https://github.com/RyanNotRain/ise-harness/actions/runs/31551819071) 的 `unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
+- [x] 最终合规审查合并后的 [GitHub Actions #31554563001](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001) 中，`unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
 - [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
 - [x] [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 已发布到公开 registry，并完成公网安装、SDK import 与 CLI 烟雾测试。
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
