@@ -76,9 +76,17 @@
 | 08-12 08:40 | 公网 WebUI | GitHub Pages、MockLLM、浏览器验收 | Render 要求账号绑定支付方式，改用公开仓库自带的免费 Pages；不把静态页面伪装成真实后端 | 新增三个可交互确定性场景、安全边界说明和 Pages workflow；本地 DOM、视觉、反馈与刷新记忆检查通过 | `9b93588` |
 | 08-12 08:50 | Pages 发布验收 | GitHub Actions、HTTP 公网检查 | 首次 workflow 在 Pages 设置启用前启动，`configure-pages` 返回 404；先确认日志根因，再启用 Pages 并重跑 | [Pages WebUI](https://ryannotrain.github.io/ise-harness/) 发布成功；首页、CSS、JS 均为 HTTP 200；最新 main CI 全绿 | `b7dda6c`, [Pages CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306267) |
 | 08-12 | 最终合规复核 | 两份课程要求、GitHub CLI、完整文档检索 | 仓库误切为 private 后按公开仓要求恢复；Pages 被平台自动停用，重新启用并部署；逐项核对文档，不补造缺失的过程证据 | 仓库恢复 PUBLIC；[Pages CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31553339513) 成功；修正发布状态、Open Design 偏离、反思声明和冷启动证据限制 | `3acfba8`, [PR #5](https://github.com/RyanNotRain/ise-harness/pull/5), [main CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001) |
+| 08-12 10:10 | Task 21 冷启动 | Claude Code + Superpowers `brainstorming` | 全新 session，只给 SPEC/PLAN，要求选择 Task 16；不读源码、Git 或旧 memory，遇歧义暂停 | Claude 提出 Q1–Q10；我拒绝 C1–C12 扩张，只采纳 Q10，并更正“100KB/FIFO/0600 已有直接测试”的错误说法 | [原始节选](./evidence/process-remediation/cold-start-transcript.md) |
+| 08-12 10:25 | Task 21 RED | `using-git-worktrees`、`test-driven-development` | 独立 worktree `codex/task21-memory-concurrency`；25 个同实例并发 `store()` 后重开恢复 25 条 | 旧实现 7/8，通过用例之外唯一失败为 `.tmp` rename `ENOENT`；确认测试抓到真实竞态 | `6699af7` |
+| 08-12 10:35 | Task 21 GREEN | `subagent-driven-development` | 新鲜 implementer 只收到 task brief 和 RED，不继承修复思路 | subagent 加实例级队列；定向 8/8、全量 72/72。人工复跑 lint 和全量测试后提交 | `71ecf6d` |
+| 08-12 10:45 | Task 21 两阶段 review | `requesting-code-review` | spec reviewer 与 quality reviewer 分开；前者核验 brief，后者专看生命周期与伪修复 | spec `APPROVED`；quality 找到 2 个 Important：读/close 竞态、测试覆盖不足。没有因 8/8 全绿直接放行 | [审查记录](./evidence/process-remediation/task-21-quality-review.md) |
+| 08-12 10:55 | Task 21 fix loop | TDD、fresh fix subagent、人工接管 | fix subagent 超时无产出，人工根据 reviewer 的复现补确定性 barrier 测试 | `71ecf6d` 上 10/13（3 个生命周期 RED）；统一 operation queue 后 13/13。终审又要求证明 close 未提前 settle，补测后 `APPROVED` | `87daefc`, `148b5f2` |
+| 08-12 11:15 | 冷启动实现重试 | Claude Code `test-driven-development` | 同一 session 切到独立 RED worktree，要求实际实现且禁读过程文档 | 三次请求都因 Claude API 预扣额度不足返回 403，未读/改源码；没有把失败写成“实现完成” | [原始节选](./evidence/process-remediation/cold-start-transcript.md) |
+| 08-12 11:50 | Task 21 完成分支 | `finishing-a-development-branch`、GitHub Actions | 合入最新 main 后只保留 13 个 Task 21 相关文件；PR 说明逐项标注 agent/人工范围 | [PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) 创建；`unit-test`、`demo`、`package` 全部通过 | [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31561202386) |
 
 ### 本轮偏离与教训
 
-- 未使用 Superpowers 完成这次整改：`opencode.json` 保留了原 OpenCode 的插件配置，但当前 Codex 会话没有暴露可调用的 Superpowers 技能。日志没有把普通 Codex 操作伪写成技能调用。
+- 2026-08-09 那轮整改没有 Superpowers 可调用，原说明保留。2026-08-12 的 Task 21 则真实使用了本机 Superpowers 工作流；Claude session 还保留了插件 hook 和技能调用记录。
 - 修复先从审查得到的失败验证开始：类型检查失败、tarball 缺入口、持久化跨实例测试缺失。新增细化测试时，部分实现已在同一整改会话中完成，不能声称每一行都严格留下了独立 RED commit。
 - “测试全绿”只有在测试覆盖生产组装路径时才有意义；旧演示在测试专用工具里嵌入护栏，证明不了 Agent 本身安全。
+- Task 21 没有倒填原始 Task 1–20 的 worktree/PR 历史。它是一条新的、完整且可核验的流程样本；7 月缺失的逐模块 PR 仍是历史偏离。

@@ -1,6 +1,6 @@
 # ise-harness 实现计划
 
-> 状态日期：2026-08-09
+> 状态日期：2026-08-12
 > 重点维度：记忆与上下文管理
 > 分发：npm 包；界面：内置 WebUI
 
@@ -123,6 +123,17 @@ Agent loop
 - 依赖：Task 14–19。
 - 状态：本地完成；commit：`4f88b64`。
 
+### Task 21：SQLiteMemory 同实例并发可靠性
+
+- 目标：修复同一个 `SQLiteMemory` 实例并发写盘时争用同一个 `.tmp` 文件的问题，并明确读、写、关闭的调用顺序。
+- worktree / 分支：`/private/tmp/ise-harness-memory-concurrency` / `codex/task21-memory-concurrency`。
+- 文件：`src/memory/sqlite-memory.ts`、`tests/unit/memory/sqlite-memory.test.ts`、`evidence/process-remediation/`。
+- RED：25 个并发 `store()` 共享临时文件，旧实现稳定触发 rename `ENOENT`；commit：`6699af7`。
+- GREEN：新鲜实现 subagent 加入实例级队列，定向 8/8；commit：`71ecf6d`。
+- 两阶段评审：spec review 首次通过；quality review 提出 2 个 Important。人工接管超时的 fix subagent，补出读/close 生命周期 RED（10/13），统一操作队列后 13/13；commit：`87daefc`。终审要求加强 close 时序断言，再以 barrier 测试关闭该问题；commit：`148b5f2`，最终 `APPROVED`。
+- 验证：`npm run lint` 通过；全量 18/18 files、77/77 tests 通过；[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) 的 `unit-test`、`demo`、`package` 全绿。完整 brief、实现报告和逐轮审查见 [`evidence/process-remediation/`](./evidence/process-remediation/)。
+- 范围：只承诺同一实例内的确定顺序；跨进程并发写入与文件锁不在本 task 中。
+
 ## 5. 依赖与并行关系
 
 ```text
@@ -131,11 +142,13 @@ Task 14 主循环
   ├─ Task 16 持久化记忆 ─┼→ Task 18 CLI/WebUI → Task 19 分发/CI
   └─ Task 17 凭据安全 ───┘                         ↓
                                               Task 20 文档
+                                                  ↓
+                                    Task 21 独立 worktree / PR
 ```
 
 - 并行组 A：Task 15、16、17。
 - 串行组 B：Task 14 → 18 → 19 → 20。
-- 正式重做时每个并行 task 应使用独立 worktree 和 MR；本次整改至少应放入新的 remediation 分支并通过 MR 合入。
+- 原始 Task 1–20 没有逐模块 worktree/MR，历史事实不变。Task 21 是提交前补做的一次完整工作流，不倒填旧记录，也不宣称能替代过去每个模块缺失的 PR。
 
 ## 6. 完成定义
 
@@ -160,4 +173,5 @@ npm pack
 - [x] [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 已发布到公开 registry，并完成公网安装、SDK import 与 CLI 烟雾测试。
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
+- [x] Task 21 在独立 worktree 中留下 RED、GREEN、两阶段 review 与 fix loop；最终质量审查为 `APPROVED`，[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) CI 全绿。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。
