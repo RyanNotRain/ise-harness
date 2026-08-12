@@ -148,6 +148,7 @@ export class Agent {
       }
 
       if (response.toolCalls.length > 0) {
+        const deferredFeedbackMessages: ChatMessage[] = [];
         for (const toolCall of response.toolCalls) {
           const tool = this.tools.get(toolCall.name);
           if (!tool) {
@@ -209,8 +210,7 @@ export class Agent {
                   role: 'user',
                   content: `[确定性反馈:${validator.name}] ${validation.summary}\n${validation.details}\n建议: ${validation.suggestions.join('；')}`,
                 };
-                messages.push(feedbackMessage);
-                await this.memory?.store(this.sessionId, feedbackMessage);
+                deferredFeedbackMessages.push(feedbackMessage);
               }
             }
           } catch (err) {
@@ -222,6 +222,10 @@ export class Agent {
             messages.push(errorMessage);
             await this.memory?.store(this.sessionId, errorMessage);
           }
+        }
+        for (const feedbackMessage of deferredFeedbackMessages) {
+          messages.push(feedbackMessage);
+          await this.memory?.store(this.sessionId, feedbackMessage);
         }
         if (feedbackFailures > this.maxFeedbackRetries) {
           return { halted: true, messages, turnCount: turnCount + 1, haltReason: 'feedback_limit', feedback, events };
