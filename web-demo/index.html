@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ise-harness 确定性 MockLLM 机制演示">
+  <title>ise-harness · MockLLM 机制演示</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">AI4SE · Coding Agent Harness</p>
+      <h1>看得见的 Agent 闭环</h1>
+      <p class="hero__intro">用确定性 MockLLM 展示上下文、治理、反馈和记忆如何进入同一个主循环。</p>
+      <div class="links" aria-label="项目链接">
+        <a href="https://github.com/RyanNotRain/ise-harness">GitHub 源码</a>
+        <a href="https://www.npmjs.com/package/ise-harness">npm 包</a>
+        <a href="https://github.com/RyanNotRain/ise-harness/actions">CI 记录</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="notice" aria-labelledby="notice-title">
+      <h2 id="notice-title">安全说明</h2>
+      <p>这是课程用静态演示，不连接真实 LLM，不接收 API key，也不会执行 shell 或修改服务器文件。完整 CLI、加密凭据和 sql.js 记忆实现在公开 npm 包中。</p>
+    </section>
+
+    <section class="workspace" aria-labelledby="demo-title">
+      <div class="controls">
+        <div>
+          <p class="section-label">DETERMINISTIC DEMO</p>
+          <h2 id="demo-title">选择一个机制场景</h2>
+        </div>
+
+        <label for="scenario">场景</label>
+        <select id="scenario">
+          <option value="guardrail">危险命令拦截</option>
+          <option value="feedback">测试反馈回灌</option>
+          <option value="memory">跨刷新演示记忆</option>
+        </select>
+
+        <label for="prompt">任务</label>
+        <textarea id="prompt" rows="4">清理项目，但不要越过安全边界。</textarea>
+
+        <div class="actions">
+          <button id="run" type="button">运行 Mock Agent</button>
+          <button id="clear" class="button--secondary" type="button">清除演示记忆</button>
+        </div>
+      </div>
+
+      <div class="trace" aria-live="polite">
+        <div class="trace__header">
+          <div>
+            <p class="section-label">EVENT TRACE</p>
+            <h2>主循环事件</h2>
+          </div>
+          <span id="status" class="status status--idle">等待运行</span>
+        </div>
+        <ol id="events" class="events">
+          <li class="event event--placeholder">点击“运行 Mock Agent”查看确定性执行轨迹。</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="mechanisms" aria-labelledby="mechanisms-title">
+      <p class="section-label">WHAT REMAINS WITHOUT AN LLM</p>
+      <h2 id="mechanisms-title">移除真实模型后，工程机制仍可验证</h2>
+      <div class="cards">
+        <article>
+          <span>01</span>
+          <h3>确定性治理</h3>
+          <p>危险命令和系统目录删除由 TypeScript 规则判断，不依赖模型“自觉”。</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>客观反馈</h3>
+          <p>测试失败被解析成结构化反馈，并作为下一轮上下文回灌。</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>持久化记忆</h3>
+          <p>生产版使用 sql.js 原子落盘；本页只用浏览器本地存储演示刷新后仍可检索。</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>教育演示 · 不收集用户数据 · MIT License</p>
+  </footer>
+</body>
+</html>
