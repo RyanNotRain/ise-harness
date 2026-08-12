@@ -155,6 +155,57 @@ describe('Agent', () => {
     }
   });
 
+  it.each([
+    {
+      name: '未知工具',
+      toolName: 'missing_tool',
+      tools: [],
+      expected: '未找到',
+    },
+    {
+      name: '工具异常',
+      toolName: 'throwing_tool',
+      tools: [{
+        name: 'throwing_tool', description: '抛出异常', parameters: {},
+        async execute() { throw new Error('注入异常'); },
+      }],
+      expected: '注入异常',
+    },
+  ])('$name 的结果应写入跨会话记忆并保持工具调用关联', async ({ toolName, tools, expected }) => {
+    const memory = new SQLiteMemory(':memory:');
+    try {
+      const firstProvider = new MockLLMProvider([
+        {
+          content: '',
+          toolCalls: [{ id: `error-${toolName}`, name: toolName, arguments: {} }],
+          stopReason: 'tool_calls',
+        },
+        { content: '本轮结束', toolCalls: [], stopReason: 'stop' },
+      ]);
+      await new Agent({
+        llmProvider: firstProvider,
+        memory,
+        sessionId: `session-${toolName}`,
+        tools,
+      }).run('执行工具');
+
+      const secondProvider = new MockLLMProvider([
+        { content: '恢复完成', toolCalls: [], stopReason: 'stop' },
+      ]);
+      await new Agent({
+        llmProvider: secondProvider,
+        memory,
+        sessionId: `session-${toolName}`,
+      }).run('恢复历史');
+
+      const restoredTool = secondProvider.callHistory[0].find((message) => message.role === 'tool');
+      expect(restoredTool?.toolCallId).toBe(`error-${toolName}`);
+      expect(restoredTool?.content).toContain(expected);
+    } finally {
+      await memory.close();
+    }
+  });
+
   it('应把声明式 maxTokens 和 temperature 提供给 LLM', async () => {
     const provider = new MockLLMProvider([{ content: '完成', toolCalls: [], stopReason: 'stop' }]);
     const agent = new Agent({
