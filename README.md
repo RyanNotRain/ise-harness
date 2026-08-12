@@ -98,9 +98,9 @@ console.log(result.haltReason);
 
 ## WebUI 与部署
 
-课程提交使用 GitHub Pages 托管确定性 MockLLM 演示，页面不收集 API key，也不会执行 shell。它可以交互展示危险命令拦截、测试反馈回灌和跨刷新浏览器演示记忆；完整的真实 LLM、加密凭据、工作区工具与 sql.js 记忆仍由 npm 包在目标机器运行。
+课程提交使用 [GitHub Pages 公网 WebUI](https://ryannotrain.github.io/ise-harness/) 托管确定性 MockLLM 演示，页面不收集 API key，也不会执行 shell。它可以交互展示危险命令拦截、测试反馈回灌和跨刷新浏览器演示记忆；完整的真实 LLM、加密凭据、工作区工具与 sql.js 记忆仍由 npm 包在目标机器运行。
 
-GitHub Pages 由 [pages.yml](./.github/workflows/pages.yml) 自动部署，源码位于 [web-demo/](./web-demo/)。公网地址在首次部署完成后回填到本节和 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+GitHub Pages 由 [pages.yml](./.github/workflows/pages.yml) 自动部署，源码位于 [web-demo/](./web-demo/)；[最近一次 Pages 部署](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306267) 已通过。
 
 完整 Node WebUI 仍可在本地启动：
 

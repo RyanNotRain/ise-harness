@@ -74,6 +74,7 @@
 | 08-11 17:10 | 远程仓库与 PR | GitHub CLI、GitHub Actions | 创建公开仓库，以 `main` 为基线推送独立整改分支，并在 PR 中披露 Agent/人工范围 | [PR #1](https://github.com/RyanNotRain/ise-harness/pull/1) 已创建；两次触发的 `unit-test`、`demo`、`package` 均通过，tarball artifact 已产出 | `8c7e5fa`, [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) |
 | 08-11 20:25 | npm 公开发布 | npm 2FA、registry 安装 | 首次 publish 暴露 npm 新的强制 2FA 和 bin 规范化要求；先修正元数据，再由项目所有者完成 npm WebAuthn | [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 发布成功；SHA-1 `dd11a0dc565801dd044b6909f11e09a3f458f734`；全新目录安装后 CLI 与 SDK 均通过 | `d564dac` |
 | 08-12 08:40 | 公网 WebUI | GitHub Pages、MockLLM、浏览器验收 | Render 要求账号绑定支付方式，改用公开仓库自带的免费 Pages；不把静态页面伪装成真实后端 | 新增三个可交互确定性场景、安全边界说明和 Pages workflow；本地 DOM、视觉、反馈与刷新记忆检查通过 | `9b93588` |
+| 08-12 08:50 | Pages 发布验收 | GitHub Actions、HTTP 公网检查 | 首次 workflow 在 Pages 设置启用前启动，`configure-pages` 返回 404；先确认日志根因，再启用 Pages 并重跑 | [Pages WebUI](https://ryannotrain.github.io/ise-harness/) 发布成功；首页、CSS、JS 均为 HTTP 200；最新 main CI 全绿 | `b7dda6c`, [Pages CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306267) |
 
 ### 本轮偏离与教训
 
