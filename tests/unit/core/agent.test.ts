@@ -264,4 +264,52 @@ describe('Agent', () => {
     await agent.run('修复测试');
     expect(provider.callHistory[1].some((message) => message.content.includes('确定性反馈'))).toBe(true);
   });
+
+  it('多工具调用时应先回灌全部工具结果，再追加验证反馈', async () => {
+    const provider = new MockLLMProvider([
+      {
+        content: '',
+        toolCalls: [
+          { id: 'first-call', name: 'first_tool', arguments: {} },
+          { id: 'second-call', name: 'second_tool', arguments: {} },
+        ],
+        stopReason: 'tool_calls',
+      },
+      { content: '已根据反馈处理', toolCalls: [], stopReason: 'stop' },
+    ]);
+    const agent = new Agent({
+      llmProvider: provider,
+      validators: [{
+        name: 'always-fail',
+        async validate() {
+          return { passed: false, summary: '需要修复', details: '测试失败', suggestions: ['重试'] };
+        },
+      }],
+      tools: [
+        {
+          name: 'first_tool', description: '第一个工具', parameters: {},
+          async execute() { return { success: true, data: 'first' }; },
+        },
+        {
+          name: 'second_tool', description: '第二个工具', parameters: {},
+          async execute() { return { success: true, data: 'second' }; },
+        },
+      ],
+    });
+
+    await agent.run('依次调用两个工具');
+
+    const secondTurn = provider.callHistory[1];
+    const assistantIndex = secondTurn.findIndex((message) => message.toolCalls?.length === 2);
+    expect(secondTurn.slice(assistantIndex + 1).map((message) => message.role)).toEqual([
+      'tool',
+      'tool',
+      'user',
+      'user',
+    ]);
+    expect(secondTurn.slice(assistantIndex + 1, assistantIndex + 3).map((message) => message.toolCallId)).toEqual([
+      'first-call',
+      'second-call',
+    ]);
+  });
 });
