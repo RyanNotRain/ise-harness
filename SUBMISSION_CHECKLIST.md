@@ -43,7 +43,7 @@ npm audit          PASS — 0 vulnerabilities
 npm pack           PASS — 135 files
 ```
 
-外部复验也已完成：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 核心修复合入后，main 分支 [GitHub Actions #31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722) 的三个 job 全绿，Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功。公共 npm registry 中 0.1.3 的 SHA-1 为 `81db427aa5e076199920215f9e1a2fe487d76d4a`；在空临时目录安装后，production audit 为 0，CLI 和跨进程工具协议 smoke 均通过。0.1.2 已添加明确的升级提示。
+外部复验也已完成：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合入核心修复，[PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 补入多工具顺序修复和最终证据。最终 main [GitHub Actions #31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 的三个 job 全绿，Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功。公共 npm registry 中 0.1.3 的 SHA-1 为 `81db427aa5e076199920215f9e1a2fe487d76d4a`；在空临时目录安装后，production audit 为 0，CLI 和跨进程工具协议 smoke 均通过。0.1.2 已添加明确的升级提示。
 
 ## 3. 无法事后改写的两项限制
 

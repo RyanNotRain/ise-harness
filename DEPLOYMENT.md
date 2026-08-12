@@ -42,6 +42,7 @@ npm package / local Node WebUI → real Agent loop
 - 公共包冷安装验证：临时空目录从 registry 安装仅新增 2 个包；`npm audit --omit=dev` 为 0；CLI `--help` 通过；SQLite 关闭重开后仍能恢复完整 assistant/tool 调用组和 `toolCallId`
 - 工具协议记忆修复评审：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13)，合并 commit `5ab0d97`
 - 0.1.3 修复合并后的 main CI/CD：[GitHub Actions #31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722)，`unit-test`、`demo`、`package` 三个 job 全部通过
+- 多工具顺序修复与最终证据：[PR #15](https://github.com/RyanNotRain/ise-harness/pull/15)，合并 commit `1a55478`；最终 main CI [#31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 全部通过
 - 同次 Pages 部署：[GitHub Actions #31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659)，成功；随后公网检查返回 HTTP 200
 - 主要整改评审：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
 - npm 发布评审：[PR #2](https://github.com/RyanNotRain/ise-harness/pull/2)

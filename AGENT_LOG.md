@@ -88,6 +88,7 @@
 | 08-12 18:32 | 0.1.2 公共发布复验 | npm WebAuth、registry 冷安装 | 在空临时目录从公共 registry 安装，不使用仓库源码或本地 tarball | `latest` 为 0.1.2；SHA-1 `3a5d0b99fe90551c7488de0a90d12c38a0657a34`；仅新增 2 个包，production audit 0，CLI、SDK Agent 和 384 维 embedding smoke 通过 | [npm 0.1.2](https://www.npmjs.com/package/ise-harness/v/0.1.2), [main CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) |
 | 08-12 19:32 | Task 24 工具协议记忆修复 | 独立 worktree、TDD、离线复现 | 最终复审发现 86/86 全绿仍未覆盖“上下文压缩/跨会话 + 工具调用”组合路径 | 四轮 RED 覆盖字段丢失、压缩切点、孤立/中断组、未知工具与异常结果、多工具反馈顺序；显式迁移 `tool_calls/tool_call_id`，定向 36/36 GREEN，并升级官方 Actions v7 | `27d15f3`, `9b29a5e`, `50401ba`, `0b717e1`, `166dd16`, `96457a2`, [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) |
 | 08-12 20:18 | 0.1.3 公共发布复验 | npm WebAuth、registry 冷安装、GitHub Actions | 发布前后都不复用仓库入口；以 registry 摘要和跨进程工具协议恢复为准 | `latest` 为 0.1.3；SHA-1 `81db427aa5e076199920215f9e1a2fe487d76d4a`；仅新增 2 个包，production audit 0，CLI 与完整 assistant/tool 调用组恢复通过；0.1.2 已弃用 | [npm 0.1.3](https://www.npmjs.com/package/ise-harness/v/0.1.3), [main CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722), [Pages](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) |
+| 08-12 22:31 | 0.1.3 源码对齐 | GitHub PR、Actions | 发现 PR #13 合并时远端分支停在核心修复，而 npm 包还含后续多工具顺序修复；不以文档掩盖差异 | 从实际 main 重建干净分支，合入缺失 RED/GREEN 和证据；[PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合并，最终 main CI 三个 job 全绿 | `ade5516`, `8113df3`, `6753f30`, [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) |
 
 ### 本轮偏离与教训
 
