@@ -1,6 +1,6 @@
 {
   "name": "ise-harness",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Coding Agent Harness SDK — 记忆与上下文管理",
   "type": "module",
   "license": "MIT",

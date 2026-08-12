@@ -83,6 +83,7 @@
 | 08-12 10:55 | Task 21 fix loop | TDD、fresh fix subagent、人工接管 | fix subagent 超时无产出，人工根据 reviewer 的复现补确定性 barrier 测试 | `71ecf6d` 上 10/13（3 个生命周期 RED）；统一 operation queue 后 13/13。终审又要求证明 close 未提前 settle，补测后 `APPROVED` | `87daefc`, `148b5f2` |
 | 08-12 11:15 | 冷启动实现重试 | Claude Code `test-driven-development` | 同一 session 切到独立 RED worktree，要求实际实现且禁读过程文档 | 三次请求都因 Claude API 预扣额度不足返回 403，未读/改源码；没有把失败写成“实现完成” | [原始节选](./evidence/process-remediation/cold-start-transcript.md) |
 | 08-12 11:50 | Task 21 完成分支 | `finishing-a-development-branch`、GitHub Actions | 合入最新 main 后只保留 13 个 Task 21 相关文件；PR 说明逐项标注 agent/人工范围 | [PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) 创建；`unit-test`、`demo`、`package` 全部通过 | [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31561202386) |
+| 08-12 15:20 | Task 22 要求审查 | 两份课程说明、独立 worktree、TDD | 逐条核对 SPEC/PLAN/代码/测试/发布物；不把历史缺失的 PR 或 NJU CI 写成已完成 | 六项问题先 RED 后 GREEN：符号链接逃逸、凭据目录权限、配置未透传、Anthropic system 丢失、Web token 可选、metadata 丢失；补重点边界特征测试；18 files、85 tests、7 demos、lint/build 全绿 | `8be7006` |
 
 ### 本轮偏离与教训
 

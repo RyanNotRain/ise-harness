@@ -47,6 +47,26 @@ Agent loop
 | 11 | 机制演示 | `40192d1` | 已改为证明生产主循环机制 |
 | 12–13 | CI、分发、文档 | `b9da021` | 已补构建、打包、WebUI 与文档一致性 |
 
+### 原始 Task 1–13 的可执行要点
+
+原始计划曾包含逐步代码样例，后来在整改时被压缩成上表。为满足“每个 task 都能交给单个 agent 执行”的要求，这里保留与最终实现一致的目标、文件、预期行为、失败测试和依赖；原始实现过程是否遵循 TDD，仍以 Git 历史和 `AGENT_LOG.md` 为准。
+
+| Task | 目标与文件 | 失败测试 / 验证 | 实现要点 | 依赖与并行 |
+|---|---|---|---|---|
+| 1 | 定义模型消息、响应与可注入 MockLLM；`src/core/types.ts`、`llm-provider.ts`、`mock-llm.ts` | 预定义响应不按序返回、耗尽不报错；`tests/unit/core/mock-llm.test.ts` | ESM 类型、调用历史、确定性响应队列 | 无，可与 4、5、7、9、10 并行 |
+| 2 | 建立工具接口、注册表及读/写/Bash/Grep；`src/tools/*` | 工具不能注册/查找、重复注册未拒绝、路径逃逸或符号链接逃逸；`tests/unit/tools/*` | JSON Schema、统一 `ToolResult`、文件工具限制在工作区 | 依赖 1 |
+| 3 | 实现自研 Agent 循环及 OpenAI/Anthropic 适配；`src/core/agent.ts`、两家 provider | stop/maxTurns/tool call 未正确停机或分发；供应商 payload 丢工具、系统上下文或采样配置；`tests/unit/core/*` | 上下文→LLM→动作→工具→回灌→停机，不使用现成 runner | 依赖 1、2 |
+| 4 | 实现持久化会话记忆；`src/memory/types.ts`、`sqlite-memory.ts` | 存取/清理/摘要失败，重开数据库丢记录或 metadata，并发写临时文件冲突；`sqlite-memory.test.ts` | sql.js、原子替换、FIFO 10000、单条 100KB、`0600`、实例内操作队列 | 无，可与 5、7、9、10 并行 |
+| 5 | 实现可选代码索引；`src/memory/code-index.ts` | 相同内容重复 embedding、查询为空、目录排除/512KB 上限/重开恢复失败；`code-index.test.ts` | SHA-256 增量判断、Float32 BLOB、余弦排序、可注入 embedder | 无，可与 4、7、9、10 并行 |
+| 6 | 实现上下文窗口压缩；`src/memory/context-window.ts` | 阈值内误压缩、超阈值不压缩、最近消息未保留；`context-window.test.ts` | 估算 token、外部摘要函数、保留近期消息 | 依赖 4；可与 2、8 并行 |
+| 7 | 实现危险命令、文件删除与 HITL；`src/governance/*` | 危险命令放行、安全命令误拦、确认超时未默认拒绝；`tests/unit/governance/*` | 确定性规则、严重级别、允许/拒绝/超时状态 | 无，可与 4、5、9、10 并行 |
+| 8 | 实现测试输出和用户反馈校验器；`src/feedback/*` | pass/fail 误判、失败详情或建议缺失；`test-validator.test.ts` | `supports` 选择适用工具，反馈结构可回灌 | 依赖 1；可与 6 并行 |
+| 9 | 实现默认配置与深合并；`src/config/*` | 缺文件不返回默认值、局部覆盖抹掉同级默认值、secret 进入配置对象；`loader.test.ts` | JSON 配置声明行为，秘密只走进程环境/加密存储 | 无，可与 4、5、7、10 并行 |
+| 10 | 实现加密凭据和 key CLI；`src/credential/*`、`src/cli/index.ts` | 重开实例丢 key、错误密码可解密、目录/文件权限过宽、状态命令回显明文；`credential.test.ts` | scrypt + AES-256-GCM、随机 salt/IV、TTY 隐藏输入、set/view/update/clear | 无，可与 4、5、7、9 并行 |
+| 11 | 提供三项 MockLLM 机制演示；`tests/demo/*` | 护栏未穿过主循环、失败反馈未改变下一步、会话记忆不隔离；`npm run test:demo` | 演示必须确定性、离线、可重复 | 依赖 1–10 |
+| 12 | 配置 CI 和 npm 分发；`.gitlab-ci.yml`、`.github/workflows/ci.yml`、`package.json` | 类型/测试失败、tarball 缺入口、全局安装后 CLI 不可运行 | unit-test/demo/package jobs，构建、打包、安装、CLI smoke | 依赖 1–11 |
+| 13 | 完成提交文档；`README.md`、`SPEC_PROCESS.md`、`AGENT_LOG.md`、`REFLECTION.md` | 必需章节/链接/限制/声明缺失，文档与命令不一致 | 人工核验真实过程和外部证据，不虚构平台状态 | 依赖 1–12 |
+
 ## 4. 提交前整改任务
 
 以下 task 为最终审查后新增，commit 栏记录本轮整改的实际提交。
@@ -134,6 +154,17 @@ Agent loop
 - 验证：`npm run lint` 通过；全量 18/18 files、77/77 tests 通过；[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) 的 `unit-test`、`demo`、`package` 全绿。完整 brief、实现报告和逐轮审查见 [`evidence/process-remediation/`](./evidence/process-remediation/)。
 - 范围：只承诺同一实例内的确定顺序；跨进程并发写入与文件锁不在本 task 中。
 
+### Task 22：最终要求逐条审查与一致性修复
+
+- 目标：逐条对照通用要求与 A 类要求，消除代码、安全边界、测试证据和文档声明之间的不一致。
+- worktree / 分支：`/private/tmp/ise-final-requirements-audit` / `codex/final-requirements-audit`。
+- 文件：`src/app/*`、`src/core/*`、`src/credential/*`、`src/memory/*`、`src/tools/workspace.ts`、对应测试和提交文档。
+- RED：符号链接可越出工作区；已有凭据目录仍为 `0755`；模型采样配置未传入；Anthropic 丢失第二条 system 上下文；真实 Web 后端无 token 也能启动；Memory metadata 跨实例丢失。
+- GREEN：真实路径边界检查、权限收紧、配置透传、合并 system 上下文、强制 Web 访问令牌、向后兼容的 metadata 列迁移；commit：`8be7006`。
+- 特征测试：直接覆盖 100KB、10000 条 FIFO、SQLite/CodeIndex `0600`、索引目录排除、512KB 跳过和磁盘恢复；这些是对已有行为的提交前验证，不冒充原始 TDD。
+- 验证：`npm run lint`、18/18 files 与 85/85 tests、7/7 demos、`npm run build` 均通过。
+- 依赖：Task 21 与两份课程要求；本 task 完成后才更新最终提交文档与发布版本。
+
 ## 5. 依赖与并行关系
 
 ```text
@@ -144,11 +175,14 @@ Task 14 主循环
                                               Task 20 文档
                                                   ↓
                                     Task 21 独立 worktree / PR
+                                                  ↓
+                                    Task 22 最终逐条审查 / PR
 ```
 
 - 并行组 A：Task 15、16、17。
 - 串行组 B：Task 14 → 18 → 19 → 20。
 - 原始 Task 1–20 没有逐模块 worktree/MR，历史事实不变。Task 21 是提交前补做的一次完整工作流，不倒填旧记录，也不宣称能替代过去每个模块缺失的 PR。
+- Task 22 使用独立 worktree、先复现问题再修复，但没有虚构逐问题的新鲜 subagent 或两阶段评审记录。
 
 ## 6. 完成定义
 
@@ -174,4 +208,5 @@ npm pack
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
 - [x] Task 21 在独立 worktree 中留下 RED、GREEN、两阶段 review 与 fix loop；最终质量审查为 `APPROVED`，[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) CI 全绿。
+- [ ] Task 22 创建 PR、通过 main CI，并将包含最终修复的 `ise-harness@0.1.1` 发布后完成 registry smoke；执行前不把预期结果写成完成。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。

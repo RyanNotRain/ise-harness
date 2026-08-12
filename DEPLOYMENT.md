@@ -37,7 +37,7 @@ npm package / local Node WebUI → real Agent loop
 - 部署 commit：`b7dda6c`
 - 最后一次页面检查时间：2026-08-12；仓库恢复公开后重新启用 Pages，部署流水线成功
 - Pages 部署流水线：[GitHub Actions #31553339513](https://github.com/RyanNotRain/ise-harness/actions/runs/31553339513)，成功
-- npm 发布：[ise-harness@0.1.0](https://www.npmjs.com/package/ise-harness)
+- npm 发布：[ise-harness](https://www.npmjs.com/package/ise-harness)（历史公开版 0.1.0；Task 22 修复版 0.1.1 待最终 main 发布）
 - 最终合规审查合并后的 main CI/CD：[GitHub Actions #31554563001](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001)，三个 job 全部通过
 - 主要整改评审：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
 - npm 发布评审：[PR #2](https://github.com/RyanNotRain/ise-harness/pull/2)
