@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ContextWindowMemory } from '../../../src/memory/context-window.js';
+import type { MemoryEntry } from '../../../src/memory/types.js';
 
 describe('ContextWindowMemory', () => {
   it('未超过阈值时不应压缩', async () => {
@@ -56,5 +57,28 @@ describe('ContextWindowMemory', () => {
       async (_msgs) => '不应被调用'
     );
     expect(result.compressed).toBe(false);
+  });
+
+  it('压缩边界不应拆开工具调用与工具结果', async () => {
+    const cwm = new ContextWindowMemory({
+      maxTokens: 1,
+      compressionThreshold: 0.1,
+      keepRecentTurns: 2,
+    });
+    const messages: MemoryEntry[] = [
+      { role: 'user', content: '较早消息' },
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'paired-call', name: 'read_file', arguments: { path: 'README.md' } }],
+      },
+      { role: 'tool', content: '文件内容', toolCallId: 'paired-call' },
+      { role: 'user', content: '继续' },
+    ];
+
+    const result = await cwm.addAndCheck(messages, async () => '摘要');
+
+    expect(result.compressed).toBe(true);
+    expect(result.messages.slice(1)).toEqual(messages.slice(1));
   });
 });

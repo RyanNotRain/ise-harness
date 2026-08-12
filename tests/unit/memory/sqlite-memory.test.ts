@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SQLiteMemory } from '../../../src/memory/sqlite-memory.js';
-import { mkdtemp, rm, stat } from 'node:fs/promises';
+import initSqlJs from 'sql.js';
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -118,6 +119,80 @@ describe('SQLiteMemory', () => {
         metadata: { category: 'decision' },
       }]);
       await second.close();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('关闭后新实例应恢复工具调用协议字段', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'ise-memory-tool-call-'));
+    const path = join(directory, 'memory.db');
+    try {
+      const first = new SQLiteMemory(path);
+      await first.store('tool-session', {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'persisted-call', name: 'read_file', arguments: { path: 'README.md' } }],
+      });
+      await first.store('tool-session', {
+        role: 'tool',
+        content: '{"success":true}',
+        toolCallId: 'persisted-call',
+      });
+      await first.close();
+
+      const second = new SQLiteMemory(path);
+      expect((await second.retrieve('tool-session')).reverse()).toEqual([
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'persisted-call', name: 'read_file', arguments: { path: 'README.md' } }],
+        },
+        {
+          role: 'tool',
+          content: '{"success":true}',
+          toolCallId: 'persisted-call',
+        },
+      ]);
+      await second.close();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('应自动迁移 0.1.2 数据库并保留旧记忆', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'ise-memory-migration-'));
+    const path = join(directory, 'memory.db');
+    try {
+      const SQL = await initSqlJs();
+      const legacy = new SQL.Database();
+      legacy.run(`CREATE TABLE sessions (
+        id TEXT PRIMARY KEY,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        summary TEXT DEFAULT ''
+      )`);
+      legacy.run(`CREATE TABLE entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        timestamp TEXT DEFAULT (datetime('now'))
+      )`);
+      legacy.run("INSERT INTO sessions (id) VALUES ('legacy')");
+      legacy.run("INSERT INTO entries (session_id, role, content) VALUES ('legacy', 'user', '旧版记忆')");
+      await writeFile(path, legacy.export());
+      legacy.close();
+
+      const migrated = new SQLiteMemory(path);
+      expect(await migrated.retrieve('legacy')).toEqual([{ role: 'user', content: '旧版记忆' }]);
+      await migrated.store('legacy', {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'new-call', name: 'grep', arguments: { pattern: 'TODO' } }],
+      });
+      expect((await migrated.retrieve('legacy'))[0].toolCalls?.[0].id).toBe('new-call');
+      await migrated.close();
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
