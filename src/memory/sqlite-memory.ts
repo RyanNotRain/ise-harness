@@ -18,7 +18,7 @@ export class SQLiteMemory implements Memory {
   private dbPath: string;
   private initialized = false;
   private readonly inMemory: boolean;
-  private writeQueue: Promise<void> = Promise.resolve();
+  private operationQueue: Promise<void> = Promise.resolve();
 
   constructor(dbPath: string) {
     this.dbPath = dbPath;
@@ -68,7 +68,7 @@ export class SQLiteMemory implements Memory {
   }
 
   async store(sessionId: string, entry: MemoryEntry): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueOperation(async () => {
       if (Buffer.byteLength(entry.content, 'utf-8') > 100 * 1024) {
         throw new Error('单条记忆不能超过 100KB');
       }
@@ -84,25 +84,26 @@ export class SQLiteMemory implements Memory {
   }
 
   async retrieve(sessionId: string, limit?: number): Promise<MemoryEntry[]> {
-    await this.writeQueue;
-    const db = await this.ensureInit();
-    const results: MemoryEntry[] = [];
-    const sql = limit
-      ? 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
-      : 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC';
-    const params = limit ? [sessionId, limit] : [sessionId];
-    const stmt = db.prepare(sql);
-    stmt.bind(params);
-    while (stmt.step()) {
-      const row = stmt.getAsObject();
-      results.push({ role: row.role as MemoryEntry['role'], content: row.content as string });
-    }
-    stmt.free();
-    return results;
+    return this.enqueueOperation(async () => {
+      const db = await this.ensureInit();
+      const results: MemoryEntry[] = [];
+      const sql = limit
+        ? 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
+        : 'SELECT role, content FROM entries WHERE session_id = ? ORDER BY id DESC';
+      const params = limit ? [sessionId, limit] : [sessionId];
+      const stmt = db.prepare(sql);
+      stmt.bind(params);
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        results.push({ role: row.role as MemoryEntry['role'], content: row.content as string });
+      }
+      stmt.free();
+      return results;
+    });
   }
 
   async clear(sessionId: string): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueOperation(async () => {
       const db = await this.ensureInit();
       db.run('DELETE FROM entries WHERE session_id = ?', [sessionId]);
       db.run('DELETE FROM decisions WHERE session_id = ?', [sessionId]);
@@ -112,20 +113,21 @@ export class SQLiteMemory implements Memory {
   }
 
   async summarize(sessionId: string): Promise<string> {
-    await this.writeQueue;
-    const db = await this.ensureInit();
-    const stmt = db.prepare('SELECT summary FROM sessions WHERE id = ?');
-    stmt.bind([sessionId]);
-    let summary = '';
-    if (stmt.step()) {
-      summary = (stmt.getAsObject() as { summary: string }).summary || '';
-    }
-    stmt.free();
-    return summary;
+    return this.enqueueOperation(async () => {
+      const db = await this.ensureInit();
+      const stmt = db.prepare('SELECT summary FROM sessions WHERE id = ?');
+      stmt.bind([sessionId]);
+      let summary = '';
+      if (stmt.step()) {
+        summary = (stmt.getAsObject() as { summary: string }).summary || '';
+      }
+      stmt.free();
+      return summary;
+    });
   }
 
   async storeDecision(sessionId: string, decision: Decision): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueOperation(async () => {
       const db = await this.ensureInit();
       db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
       db.run('INSERT INTO decisions (session_id, context, decision, rationale) VALUES (?, ?, ?, ?)', [sessionId, decision.context, decision.decision, decision.rationale]);
@@ -134,25 +136,26 @@ export class SQLiteMemory implements Memory {
   }
 
   async retrieveDecisions(sessionId: string, limit?: number): Promise<Decision[]> {
-    await this.writeQueue;
-    const db = await this.ensureInit();
-    const results: Decision[] = [];
-    const sql = limit
-      ? 'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC LIMIT ?'
-      : 'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC';
-    const params = limit ? [sessionId, limit] : [sessionId];
-    const stmt = db.prepare(sql);
-    stmt.bind(params);
-    while (stmt.step()) {
-      const row = stmt.getAsObject() as { context: string; decision: string; rationale: string };
-      results.push(row);
-    }
-    stmt.free();
-    return results;
+    return this.enqueueOperation(async () => {
+      const db = await this.ensureInit();
+      const results: Decision[] = [];
+      const sql = limit
+        ? 'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC LIMIT ?'
+        : 'SELECT context, decision, rationale FROM decisions WHERE session_id = ? ORDER BY id DESC';
+      const params = limit ? [sessionId, limit] : [sessionId];
+      const stmt = db.prepare(sql);
+      stmt.bind(params);
+      while (stmt.step()) {
+        const row = stmt.getAsObject() as { context: string; decision: string; rationale: string };
+        results.push(row);
+      }
+      stmt.free();
+      return results;
+    });
   }
 
   async updateSummary(sessionId: string, summary: string): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueOperation(async () => {
       const db = await this.ensureInit();
       db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
       db.run("UPDATE sessions SET summary = ?, updated_at = datetime('now') WHERE id = ?", [summary, sessionId]);
@@ -161,7 +164,7 @@ export class SQLiteMemory implements Memory {
   }
 
   async close(): Promise<void> {
-    return this.enqueueWrite(async () => {
+    return this.enqueueOperation(async () => {
       if (this.db) {
         await this.persist(this.db);
         this.db.close();
@@ -171,9 +174,9 @@ export class SQLiteMemory implements Memory {
     });
   }
 
-  private enqueueWrite(operation: () => Promise<void>): Promise<void> {
-    const result = this.writeQueue.then(operation);
-    this.writeQueue = result.catch(() => undefined);
+  private enqueueOperation<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operationQueue.then(operation);
+    this.operationQueue = result.then(() => undefined, () => undefined);
     return result;
   }
 
