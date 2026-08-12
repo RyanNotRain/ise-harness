@@ -1,33 +1,44 @@
-# WebUI 部署记录
+# WebUI 部署与验证记录
 
-## 架构
+## 最终提交采用的架构
 
-浏览器访问 Node.js 内置 HTTP 服务；服务端创建 `Agent` 运行时并调用配置的 LLM。会话记忆写入实例文件系统，因此免费实例重建后可能丢失；课程演示环境应把这一点视为已知限制，生产环境应挂载持久卷或外接数据库。
+最终公网界面使用 GitHub Pages 托管 `web-demo/` 中的静态 MockLLM 演示。它不收集 API key、不连接真实 LLM、不执行 shell，也不把静态页面冒充生产后端。页面用确定性事件轨迹展示三项可独立验证的机制：危险动作治理、测试反馈回灌和跨刷新浏览器演示记忆。
 
 ```text
-Browser → HTTPS / Bearer token → WebUI server → Agent loop
-                                         ├→ LLM API
-                                         ├→ workspace tools
-                                         └→ sql.js memory
+GitHub Pages → static HTML/CSS/JS → deterministic MockLLM event trace
+                                      ├→ governance demo
+                                      ├→ feedback demo
+                                      └→ browser-local demo memory
+
+npm package / local Node WebUI → real Agent loop
+                                  ├→ LLM API
+                                  ├→ workspace tools
+                                  └→ encrypted credentials + sql.js memory
 ```
 
-## Render 部署步骤
+这种拆分避免在公共演示页面传输真实凭据，同时仍提供课程要求的可访问 WebUI。完整能力通过公开 npm 包交付。
 
-1. 将仓库推送到课程要求的公开 GitLab/GitHub 仓库。
-2. 在 Render 创建 Blueprint，并选择仓库中的 `render.yaml`。
-3. 在平台 Secret 管理界面录入：
-   - `ISE_API_KEY`：LLM 供应商 key；
-   - `ISE_WEB_ACCESS_TOKEN`：至少 32 字节的随机访问令牌。
-4. 等待构建完成，访问 `/health`，应返回 `{ "ok": true }`。
-5. 打开首页，输入访问令牌和一个只读演示任务。
-6. 将实际公网 URL 填入本文件和 README，并保存最后一次部署成功截图或流水线链接。
+## GitHub Pages 自动部署
+
+1. [pages.yml](./.github/workflows/pages.yml) 在 `main` 的 `web-demo/**` 或工作流变化时触发。
+2. workflow 上传 `web-demo/` 为 Pages artifact。
+3. `actions/deploy-pages` 发布到项目 Pages URL。
+4. 部署后验证首页标题、三个场景和外部证据链接。
+
+该流程不需要 Secret、银行卡或第三方云平台账号。
+
+## 可选真实后端
+
+仓库保留 [render.yaml](./render.yaml)。若以后需要公网真实 LLM 后端，可以在 Render 或其他 Node 平台部署，并通过平台 Secret 管理设置 `ISE_API_KEY` 与 `ISE_WEB_ACCESS_TOKEN`。免费实例的临时文件系统会导致 sql.js 记忆在重启后丢失，生产环境应挂载持久存储。
 
 ## 最终交付记录
 
-- 公网 URL：**待项目所有者部署后填写**
+- 公网 URL：**待 GitHub Pages 首次部署后填写**
 - 部署 commit：**待填写**
-- 最后一次健康检查时间：**待填写**
-- 最后一次提交前 CI/CD：[GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636)，三个 job 全部通过
-- 评审记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
+- 最后一次页面检查时间：**待填写**
+- npm 发布：[ise-harness@0.1.0](https://www.npmjs.com/package/ise-harness)
+- 最近一次 main CI/CD：[GitHub Actions #31496079480](https://github.com/RyanNotRain/ise-harness/actions/runs/31496079480)，三个 job 全部通过
+- 主要整改评审：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
+- npm 发布评审：[PR #2](https://github.com/RyanNotRain/ise-harness/pull/2)
 
-前三项部署信息依赖 Render 账号与真实 Secret，不能以本地结果代替。
+前三项必须在 Pages 实际发布并完成公网检查后填写，不能以本地结果代替。
