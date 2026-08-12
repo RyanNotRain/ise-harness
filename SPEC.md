@@ -78,7 +78,7 @@ ise-harness 是一个面向开发者的 SDK，用于构建自己的编码智能�
 - 使用 sql.js 的 SQLite 格式存储对话历史；非 `:memory:` 路径在每次写操作后原子导出到磁盘
 - 表结构：
   - `sessions`: id, created_at, updated_at, summary
-  - `entries`: id, session_id, role, content, metadata(JSON，可空), timestamp
+  - `entries`: id, session_id, role, content, tool_calls(JSON，可空), tool_call_id(可空), metadata(JSON，可空), timestamp
   - `decisions`: id, session_id, context, decision, rationale, timestamp
 - 边界：单条目最大 100KB，单会话最大 10000 条
 
@@ -274,6 +274,9 @@ entries
 ├── session_id: TEXT → sessions.id
 ├── role: TEXT ('user' | 'assistant' | 'tool' | 'system')
 ├── content: TEXT
+├── tool_calls: TEXT (JSON，可空；assistant 的结构化工具调用)
+├── tool_call_id: TEXT (可空；tool 结果关联 ID)
+├── metadata: TEXT (JSON，可空)
 └── timestamp: TEXT (ISO 8601)
 
 code_index

@@ -46,6 +46,8 @@ export class SQLiteMemory implements Memory {
         session_id TEXT NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
+        tool_calls TEXT,
+        tool_call_id TEXT,
         metadata TEXT,
         timestamp TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (session_id) REFERENCES sessions(id)
@@ -56,6 +58,12 @@ export class SQLiteMemory implements Memory {
       .map((column) => String(column[1])) ?? [];
     if (!entryColumns.includes('metadata')) {
       this.db.run('ALTER TABLE entries ADD COLUMN metadata TEXT');
+    }
+    if (!entryColumns.includes('tool_calls')) {
+      this.db.run('ALTER TABLE entries ADD COLUMN tool_calls TEXT');
+    }
+    if (!entryColumns.includes('tool_call_id')) {
+      this.db.run('ALTER TABLE entries ADD COLUMN tool_call_id TEXT');
     }
     this.db.run(`
       CREATE TABLE IF NOT EXISTS decisions (
@@ -77,15 +85,25 @@ export class SQLiteMemory implements Memory {
   async store(sessionId: string, entry: MemoryEntry): Promise<void> {
     return this.enqueueOperation(async () => {
       const metadata = entry.metadata === undefined ? null : JSON.stringify(entry.metadata);
-      if (Buffer.byteLength(entry.content, 'utf-8') + Buffer.byteLength(metadata ?? '', 'utf-8') > 100 * 1024) {
+      const toolCalls = entry.toolCalls === undefined ? null : JSON.stringify(entry.toolCalls);
+      const toolCallId = entry.toolCallId ?? null;
+      if (
+        Buffer.byteLength(entry.content, 'utf-8')
+        + Buffer.byteLength(metadata ?? '', 'utf-8')
+        + Buffer.byteLength(toolCalls ?? '', 'utf-8')
+        + Buffer.byteLength(toolCallId ?? '', 'utf-8')
+        > 100 * 1024
+      ) {
         throw new Error('单条记忆不能超过 100KB');
       }
       const db = await this.ensureInit();
       db.run('INSERT OR IGNORE INTO sessions (id) VALUES (?)', [sessionId]);
-      db.run('INSERT INTO entries (session_id, role, content, metadata) VALUES (?, ?, ?, ?)', [
+      db.run('INSERT INTO entries (session_id, role, content, tool_calls, tool_call_id, metadata) VALUES (?, ?, ?, ?, ?, ?)', [
         sessionId,
         entry.role,
         entry.content,
+        toolCalls,
+        toolCallId,
         metadata,
       ]);
       db.run("UPDATE sessions SET updated_at = datetime('now') WHERE id = ?", [sessionId]);
@@ -101,8 +119,8 @@ export class SQLiteMemory implements Memory {
       const db = await this.ensureInit();
       const results: MemoryEntry[] = [];
       const sql = limit
-        ? 'SELECT role, content, metadata FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
-        : 'SELECT role, content, metadata FROM entries WHERE session_id = ? ORDER BY id DESC';
+        ? 'SELECT role, content, tool_calls, tool_call_id, metadata FROM entries WHERE session_id = ? ORDER BY id DESC LIMIT ?'
+        : 'SELECT role, content, tool_calls, tool_call_id, metadata FROM entries WHERE session_id = ? ORDER BY id DESC';
       const params = limit ? [sessionId, limit] : [sessionId];
       const stmt = db.prepare(sql);
       stmt.bind(params);
@@ -111,9 +129,17 @@ export class SQLiteMemory implements Memory {
         const metadata = typeof row.metadata === 'string'
           ? JSON.parse(row.metadata) as Record<string, unknown>
           : undefined;
+        const toolCalls = typeof row.tool_calls === 'string'
+          ? JSON.parse(row.tool_calls) as MemoryEntry['toolCalls']
+          : undefined;
+        const toolCallId = typeof row.tool_call_id === 'string'
+          ? row.tool_call_id
+          : undefined;
         results.push({
           role: row.role as MemoryEntry['role'],
           content: row.content as string,
+          ...(toolCalls === undefined ? {} : { toolCalls }),
+          ...(toolCallId === undefined ? {} : { toolCallId }),
           ...(metadata === undefined ? {} : { metadata }),
         });
       }
