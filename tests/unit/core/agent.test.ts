@@ -134,6 +134,27 @@ describe('Agent', () => {
     }
   });
 
+  it('不应恢复因进程中断而缺少工具结果的不完整调用组', async () => {
+    const memory = new SQLiteMemory(':memory:');
+    try {
+      await memory.store('interrupted-session', {
+        role: 'assistant',
+        content: '',
+        toolCalls: [{ id: 'unfinished-call', name: 'bash', arguments: { command: 'npm test' } }],
+      });
+      const provider = new MockLLMProvider([
+        { content: '完成', toolCalls: [], stopReason: 'stop' },
+      ]);
+      const agent = new Agent({ llmProvider: provider, memory, sessionId: 'interrupted-session' });
+
+      await agent.run('重新开始');
+
+      expect(provider.callHistory[0].some((message) => message.toolCalls?.length)).toBe(false);
+    } finally {
+      await memory.close();
+    }
+  });
+
   it('应把声明式 maxTokens 和 temperature 提供给 LLM', async () => {
     const provider = new MockLLMProvider([{ content: '完成', toolCalls: [], stopReason: 'stop' }]);
     const agent = new Agent({
