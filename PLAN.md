@@ -113,7 +113,7 @@ Agent loop
 - 实现：`main/types/exports/files/bin`、prepack 构建、CI 类型检查/测试/打包/全局安装烟雾测试。
 - 验证：`npm run lint && npm run build && npm pack`，在临时目录全局或局部安装 tarball并运行 `ise-harness --help`。
 - 依赖：Task 18。
-- 状态：本地构建、打包和 CLI 烟雾验证完成；真实 CI 与 registry 发布待外部执行；commit：`2457e4f`, `6a594b3`。
+- 状态：完成；本地构建、tarball 安装和 CLI 烟雾验证通过，GitHub Actions 全绿，`ise-harness@0.1.0` 已发布到公开 npm registry；commit：`2457e4f`, `6a594b3`, `d564dac`。
 
 ### Task 20：规约、过程与提交文档一致性
 
@@ -155,8 +155,9 @@ npm pack
 - [x] 当前整改已提交到独立分支 `codex/submission-remediation`。
 - [x] 已创建 [PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)，写明 Agent/人工修改范围以及原流程偏离。
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
-- [x] [GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636) 的 `unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
+- [x] [GitHub Actions #31551819071](https://github.com/RyanNotRain/ise-harness/actions/runs/31551819071) 的 `unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
 - [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
 - [x] [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 已发布到公开 registry，并完成公网安装、SDK import 与 CLI 烟雾测试。
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
+- [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。

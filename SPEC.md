@@ -351,7 +351,8 @@ interface HarnessConfig {
 - 提供 CLI 命令 `ise-harness`
 - `npm pack` 必须包含 `dist/`、声明文件、CLI 与 LICENSE
 - CI 将 tarball 全局安装后运行 `ise-harness --help`
-- WebUI 使用 `render.yaml` 部署；真实 URL 与最后一次健康检查记录写入 `DEPLOYMENT.md`
+- 课程演示 WebUI 使用 GitHub Pages 部署 `web-demo/` 中的无凭据 MockLLM 静态页面；完整 Node WebUI 可本地运行，`render.yaml` 仅作为可选后端模板
+- 公网 URL、部署流水线与最后一次检查记录写入 `DEPLOYMENT.md`
 
 ---
 
@@ -367,6 +368,12 @@ interface HarnessConfig {
 | 本地 Embedding | @xenova/transformers | 纯 JS 实现、无需 Python、本地运行 |
 | LLM 客户端 | 原生 fetch + 自研协议适配 | 仅使用供应商单次 API，不引入现成 agent runner |
 | 分发 | npm | 覆盖开发者 SDK 场景 |
+| 部署 | GitHub Pages + 可选 Node WebUI | Pages 免费且不需要银行卡，用无凭据 MockLLM 安全展示机制；真实 LLM 能力由本地 npm 包提供 |
+| UI 设计 | 项目内轻量设计 token 与原生 HTML/CSS/JS | 本次静态演示未调用 Open Design skill；这是对课程“强烈推荐”项的公开偏离，而非冒充已使用。页面优先保证可访问性、响应式布局和安全边界说明 |
+
+### 8.1 前端设计说明
+
+项目后期为满足公网 WebUI 交付增加了静态演示页。当前界面没有采用 Open Design 的现成设计系统，也没有触发 Open Design skill；视觉规范由 `web-demo/styles.css` 中的颜色、间距、圆角和字体 token 统一管理。选择轻量原生实现，是为了让 Pages 构建不依赖外部运行时，并确保演示不接收 API key、不执行 shell。若继续迭代，应在设计冻结前引入 Open Design，并把相应 skill 调用与人工修改记录到 `AGENT_LOG.md`。
 
 ---
 
@@ -434,7 +441,7 @@ interface HarnessConfig {
 | Mock LLM | 替换 MockLLMProvider 后，所有核心测试通过 |
 | 凭据管理 | key set → key view（不显示明文）→ key clear 流程完整 |
 | 分发 | `npm pack` → 全局安装 tarball → `ise-harness --help` 可运行 |
-| WebUI | `/health` 返回 200；配置访问令牌时，未授权 `/api/run` 返回 401 |
+| WebUI | Pages 公网 URL 返回 200 并可运行三项 MockLLM 演示；本地 Node WebUI 的 `/health` 返回 200，配置访问令牌时未授权 `/api/run` 返回 401 |
 
 ---
 

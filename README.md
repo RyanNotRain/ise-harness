@@ -4,7 +4,7 @@
 
 本项目的重点维度是**记忆与上下文管理**：磁盘持久化 SQLite 会话记忆、代码库语义索引、按需检索，以及上下文超限后的历史压缩。项目不依赖 LangChain、AutoGen、CrewAI 等现成 agent 主循环。
 
-公开仓库：[RyanNotRain/ise-harness](https://github.com/RyanNotRain/ise-harness)；整改与评审记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)；最近一次提交前 CI：[GitHub Actions #31476962636](https://github.com/RyanNotRain/ise-harness/actions/runs/31476962636)（`unit-test`、`demo`、`package` 全部通过）。
+公开仓库：[RyanNotRain/ise-harness](https://github.com/RyanNotRain/ise-harness)；整改与评审记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)；最近一次 main CI：[GitHub Actions #31551819071](https://github.com/RyanNotRain/ise-harness/actions/runs/31551819071)（`unit-test`、`demo`、`package` 全部通过）。
 
 ## 功能与安全边界
 
@@ -100,7 +100,9 @@ console.log(result.haltReason);
 
 课程提交使用 [GitHub Pages 公网 WebUI](https://ryannotrain.github.io/ise-harness/) 托管确定性 MockLLM 演示，页面不收集 API key，也不会执行 shell。它可以交互展示危险命令拦截、测试反馈回灌和跨刷新浏览器演示记忆；完整的真实 LLM、加密凭据、工作区工具与 sql.js 记忆仍由 npm 包在目标机器运行。
 
-GitHub Pages 由 [pages.yml](./.github/workflows/pages.yml) 自动部署，源码位于 [web-demo/](./web-demo/)；[最近一次 Pages 部署](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306267) 已通过。
+GitHub Pages 由 [pages.yml](./.github/workflows/pages.yml) 自动部署，源码位于 [web-demo/](./web-demo/)；[最近一次 Pages 部署](https://github.com/RyanNotRain/ise-harness/actions/runs/31553339513) 已通过。
+
+静态页面使用项目内原生 HTML/CSS/JS 与轻量设计 token，没有调用 Open Design skill。该选择和偏离原因在 `SPEC.md` 中如实记录；页面不把自定义样式描述为 Open Design 产物。
 
 完整 Node WebUI 仍可在本地启动：
 
