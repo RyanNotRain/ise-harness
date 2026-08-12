@@ -172,6 +172,7 @@ Agent loop
 - RED：`@xenova/transformers` 依赖链的 production audit 为 5 high/1 critical；官方后继包实测仍有 4 high；`HashingEmbedder` 测试先因类不存在失败。
 - GREEN：自研 signed feature hashing embedding，无模型下载或第三方 embedding 依赖；SDK 仍允许注入高质量 `Embedder`；显式加入 `@types/node` 保证干净安装可构建。
 - 验证：完整 `npm audit` 0 漏洞；18/18 files、86/86 tests、7/7 demos、lint/build/pack 通过；CI 加 `npm audit --omit=dev`。
+- 状态：完成；commit `3fe1040` 经 [PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合入，main CI [#31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 全绿；`ise-harness@0.1.2` 已发布并完成公共 registry 冷安装、audit、CLI 和 SDK smoke。
 - 依赖：Task 22、0.1.1 registry smoke；发布 0.1.2 后弃用 0.1.1。
 
 ## 5. 依赖与并行关系
@@ -213,10 +214,10 @@ npm pack
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
 - [x] 最终合规审查合并后的 [GitHub Actions #31554563001](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001) 中，`unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
 - [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
-- [x] [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 已发布到公开 registry，并完成公网安装、SDK import 与 CLI 烟雾测试。
+- [x] [`ise-harness@0.1.2`](https://www.npmjs.com/package/ise-harness/v/0.1.2) 已发布到公开 registry，`latest` 指向该版本；冷安装后的 production audit 为 0，SDK、CLI 与内置 embedding smoke 均通过。
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
 - [x] Task 21 在独立 worktree 中留下 RED、GREEN、两阶段 review 与 fix loop；最终质量审查为 `APPROVED`，[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) CI 全绿。
 - [x] Task 22 已由 [PR #8](https://github.com/RyanNotRain/ise-harness/pull/8) 合并，main CI [#31578635146](https://github.com/RyanNotRain/ise-harness/actions/runs/31578635146) 通过；0.1.1 已发布且 registry CLI/SDK smoke 通过，但随即发现旧可选依赖漏洞，因此不作为最终推荐版本。
-- [ ] Task 23 通过 PR/main CI，发布 0.1.2，registry 安装 audit/CLI/SDK smoke 全绿，并弃用有漏洞依赖链的 0.1.1。
+- [x] Task 23 已由 [PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合并；main CI [#31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 全绿；0.1.2 registry 安装 audit/CLI/SDK smoke 全绿。0.1.1 的弃用标记由 npm 账户 WebAuth 单独确认。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。
