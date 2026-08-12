@@ -4,6 +4,19 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+type TestHooks = {
+  persist: (db: unknown) => Promise<void>;
+  ensureInit: () => Promise<unknown>;
+  db: unknown;
+  initialized: boolean;
+};
+
 describe('SQLiteMemory', () => {
   let memory: SQLiteMemory;
 
@@ -72,5 +85,120 @@ describe('SQLiteMemory', () => {
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
+  });
+
+  it('并发写入同一个磁盘数据库时不应丢失条目或发生临时文件冲突', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'ise-memory-concurrent-'));
+    const path = join(directory, 'memory.db');
+    const concurrent = new SQLiteMemory(path);
+    try {
+      await expect(Promise.all(
+        Array.from({ length: 25 }, (_, index) => concurrent.store('shared', {
+          role: 'user',
+          content: `并发消息 ${index}`,
+        }))
+      )).resolves.toHaveLength(25);
+      await concurrent.close();
+
+      const reopened = new SQLiteMemory(path);
+      expect(await reopened.retrieve('shared')).toHaveLength(25);
+      await reopened.close();
+    } finally {
+      await concurrent.close().catch(() => undefined);
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ['retrieve', (target: SQLiteMemory) => target.retrieve('lifecycle')],
+    ['retrieveDecisions', (target: SQLiteMemory) => target.retrieveDecisions('lifecycle')],
+    ['summarize', (target: SQLiteMemory) => target.summarize('lifecycle')],
+  ])('未初始化实例的 %s 已发起时 close 应等待读取完成', async (_name, read) => {
+    const warmup = new SQLiteMemory(':memory:');
+    await warmup.retrieve('warmup');
+    await warmup.close();
+    const target = new SQLiteMemory(':memory:');
+    const hooks = target as unknown as TestHooks;
+    const originalEnsureInit = hooks.ensureInit.bind(target);
+    const started = deferred();
+    const release = deferred();
+    hooks.ensureInit = async () => {
+      started.resolve();
+      await release.promise;
+      return originalEnsureInit();
+    };
+
+    const pendingRead = read(target);
+    await started.promise;
+    let closeSettled = false;
+    const closing = target.close().then(() => { closeSettled = true; });
+    await Promise.resolve();
+    const closeOvertookRead = closeSettled;
+    release.resolve();
+    await Promise.all([pendingRead, closing]);
+
+    expect(closeOvertookRead).toBe(false);
+    expect(hooks.db).toBeNull();
+    expect(hooks.initialized).toBe(false);
+  });
+
+  it('所有写 API 应共用队列，读 API 应等待已排队写入', async () => {
+    const queued = new SQLiteMemory(':memory:');
+    const hooks = queued as unknown as TestHooks;
+    const originalPersist = hooks.persist.bind(queued);
+    const started = deferred();
+    const release = deferred();
+    let calls = 0;
+    hooks.persist = async (db) => {
+      calls += 1;
+      if (calls === 1) { started.resolve(); await release.promise; }
+      await originalPersist(db);
+    };
+    const store = queued.store('ordered', { role: 'user', content: '将被清除' });
+    await started.promise;
+    const clear = queued.clear('ordered');
+    const decision = queued.storeDecision('ordered', { context: '顺序', decision: '串行', rationale: '竞态' });
+    const update = queued.updateSummary('ordered', '排队后摘要');
+    const entries = queued.retrieve('ordered');
+    const decisions = queued.retrieveDecisions('ordered');
+    const summary = queued.summarize('ordered');
+    await Promise.resolve();
+    expect(calls).toBe(1);
+    release.resolve();
+    await Promise.all([store, clear, decision, update]);
+    await expect(entries).resolves.toEqual([]);
+    await expect(decisions).resolves.toEqual([{ context: '顺序', decision: '串行', rationale: '竞态' }]);
+    await expect(summary).resolves.toBe('排队后摘要');
+    await queued.close();
+  });
+
+  it('close 应等待已排队写入，写失败不得毒化后续队列', async () => {
+    const queued = new SQLiteMemory(':memory:');
+    const hooks = queued as unknown as TestHooks;
+    const originalPersist = hooks.persist.bind(queued);
+    const started = deferred();
+    const release = deferred();
+    let calls = 0;
+    hooks.persist = async (db) => {
+      calls += 1;
+      if (calls === 1) throw new Error('注入的持久化失败');
+      if (calls === 2) {
+        started.resolve();
+        await release.promise;
+      }
+      await originalPersist(db);
+    };
+    await expect(queued.store('recovery', { role: 'user', content: '保留' })).rejects.toThrow('注入的持久化失败');
+    const update = queued.updateSummary('recovery', '已恢复');
+    await started.promise;
+    let closeSettled = false;
+    const closing = queued.close().then(() => { closeSettled = true; });
+    await Promise.resolve();
+    expect(closeSettled).toBe(false);
+    release.resolve();
+    await expect(update).resolves.toBeUndefined();
+    await expect(closing).resolves.toBeUndefined();
+    expect(hooks.db).toBeNull();
+    expect(hooks.initialized).toBe(false);
   });
 });

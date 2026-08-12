@@ -6,7 +6,7 @@ Superpowers 里对我帮助最大的是 brainstorming。刚开始我只想“做
 
 writing-plans 也有用，但代码示例不能照单全收。Task 7 的 `defaultDeny` 没进入超时逻辑，subagent 原样复制后就成了死参数。PLAN 还用了 better-sqlite3 API，实际依赖却是 sql.js，冷启动 agent 编译时才发现冲突。
 
-我没有按要求使用 worktree，也没有完成每个模块一个 MR。所有原始 commit 都在 main 上，这是明确的流程缺口，不能用“单人项目没必要”解释过去。分支隔离的价值不只在防止多人冲突，也在保留每个 task 的审查证据。
+原始开发没有按要求使用 worktree，也没做到每个模块一个 MR，commit 都进了 main。这是流程缺口。提交前我用 Task 21 补走了一次独立 worktree、RED/GREEN、双 review 和 PR；它证明我后来能按流程做，但不能倒填旧历史。
 
 ## 2. TDD 和测试质量
 

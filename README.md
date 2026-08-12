@@ -4,7 +4,7 @@
 
 本项目的重点维度是**记忆与上下文管理**：磁盘持久化 SQLite 会话记忆、代码库语义索引、按需检索，以及上下文超限后的历史压缩。项目不依赖 LangChain、AutoGen、CrewAI 等现成 agent 主循环。
 
-公开仓库：[RyanNotRain/ise-harness](https://github.com/RyanNotRain/ise-harness)；整改与评审记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)；最终合规审查合并后的 main CI：[GitHub Actions #31554563001](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001)（`unit-test`、`demo`、`package` 全部通过）。
+公开仓库：[RyanNotRain/ise-harness](https://github.com/RyanNotRain/ise-harness)；主体整改记录：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)；Task 21 的 worktree/TDD/双评审补充记录：[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7)。两条 PR 的 `unit-test`、`demo`、`package` 均通过。
 
 ## 功能与安全边界
 
@@ -140,6 +140,8 @@ npm pack
 ```
 
 GitHub Actions 与 GitLab CI 都包含 `unit-test`、`demo` 和 `package` job。每次 push 会执行类型检查、离线测试、构建 npm 包、全局安装 tarball，并运行 CLI 烟雾测试；两套 CI 都会保留 npm tarball 作为短期 artifact。
+
+提交前还针对记忆并发做了一个独立的 Superpowers/TDD 补充任务。旧实现在 25 个并发 `store()` 时会争用同一个临时文件；本次修复留下了单独的 RED、GREEN、spec review、quality review 和两轮 fix commit。过程材料在 [`evidence/process-remediation/`](./evidence/process-remediation/)，最终本地结果为 18/18 个测试文件、77/77 个测试通过。该任务只保证同一个 `SQLiteMemory` 实例内的调用顺序，不提供跨进程文件锁。
 
 ## 目录结构
 

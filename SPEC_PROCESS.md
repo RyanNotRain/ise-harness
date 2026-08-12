@@ -99,6 +99,20 @@ Claude Code 对 Task 4 的解读是"PLAN 写错了，但 SPEC 描述的行为是
 
 **关键认识：** 冷启动验证暴露的最大问题是"PLAN 中的代码不等于实际能跑的代码"。PLAN 是设计文档，不是源码。这让我在后续实现中更加谨慎——每次 subagent 实现前，我都会先确认依赖环境和类型定义是正确的。
 
+### 2026-08-12 补充冷启动：保留下来的原始会话
+
+7 月那次冷启动只剩摘要，没法事后补成原始记录。提交前我重新做了一次：Claude Code `2.1.202`，全新 session，模型 `deepseek-v4-pro`，只把隔离目录中的 `SPEC.md` 和 `PLAN.md` 交给它。启动 hook 显示 `superpowers@superpowers-dev 6.1.1` 已启用；第一轮实际调用了 `brainstorming`。完整的 user/assistant 节选和隔离说明见 [`evidence/process-remediation/cold-start-transcript.md`](./evidence/process-remediation/cold-start-transcript.md)。这份材料是新的补充证据，不替换 7 月缺失的导出。
+
+陌生 agent 选择 Task 16 后没有猜着做，而是在 Q1–Q10 处停下。最有用的是 Q10：PLAN 说记忆要跨进程，却没有写同实例并发调用的顺序。第二轮它把补充任务扩成 C1–C12，我没有接受，只保留 25 个并发 `store()` 和重开恢复这一条。第四轮我又主动更正了自己说错的事实：100KB、FIFO 和 `0600` 在源码中有实现，但当时没有直接测试。agent 据此把它们定为 characterization/tests-after，不能冒充 TDD RED。
+
+我随后在独立 worktree 写出并运行真正的 RED：旧实现争用同一个 `.tmp` 文件，rename 报 `ENOENT`。冷启动 Claude 在第五轮已调用 `test-driven-development`，但三次都因其 API 账户预扣额度不足返回 403，尚未读取或修改源码；所以我不能声称它完成了实现。Task 21 的实现改由另一个新鲜 subagent 完成，并经过 spec review、quality review 和两轮 fix。这个分工也记录在 `AGENT_LOG.md` 中。
+
+```diff
+- Task 16 只写“跨进程持久化”，未规定并发调用顺序
++ Task 21：同实例操作按调用顺序排队；错误对当前调用者可见，但不毒化后续队列
++ close 必须等待先发读写；跨进程同时写仍不承诺
+```
+
 ---
 
 ## 三、提交前独立审查与第四轮迭代
