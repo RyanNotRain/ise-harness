@@ -176,15 +176,29 @@ describe('SQLiteMemory', () => {
     const queued = new SQLiteMemory(':memory:');
     const hooks = queued as unknown as TestHooks;
     const originalPersist = hooks.persist.bind(queued);
-    let fail = true;
+    const started = deferred();
+    const release = deferred();
+    let calls = 0;
     hooks.persist = async (db) => {
-      if (fail) { fail = false; throw new Error('注入的持久化失败'); }
+      calls += 1;
+      if (calls === 1) throw new Error('注入的持久化失败');
+      if (calls === 2) {
+        started.resolve();
+        await release.promise;
+      }
       await originalPersist(db);
     };
     await expect(queued.store('recovery', { role: 'user', content: '保留' })).rejects.toThrow('注入的持久化失败');
     const update = queued.updateSummary('recovery', '已恢复');
-    const closing = queued.close();
+    await started.promise;
+    let closeSettled = false;
+    const closing = queued.close().then(() => { closeSettled = true; });
+    await Promise.resolve();
+    expect(closeSettled).toBe(false);
+    release.resolve();
     await expect(update).resolves.toBeUndefined();
     await expect(closing).resolves.toBeUndefined();
+    expect(hooks.db).toBeNull();
+    expect(hooks.initialized).toBe(false);
   });
 });
