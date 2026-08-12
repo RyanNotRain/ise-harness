@@ -1,10 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { CodeIndexMemory } from '../../../src/memory/code-index.js';
+import { CodeIndexMemory, HashingEmbedder } from '../../../src/memory/code-index.js';
 import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 describe('CodeIndexMemory', () => {
+  it('内置 hashing embedder 应确定性地把共享代码词映射得更接近', async () => {
+    const embedder = new HashingEmbedder(128);
+    const query = await embedder.embed('parse user config');
+    const related = await embedder.embed('function parseUserConfig input');
+    const unrelated = await embedder.embed('database migration rollback');
+
+    expect(await embedder.embed('parse user config')).toEqual(query);
+    expect(query).toHaveLength(128);
+    expect(cosine(query, related)).toBeGreaterThan(cosine(query, unrelated));
+  });
+
   it('应能索引文件并通过查询检索', async () => {
     const index = new CodeIndexMemory(':memory:', {
       embedder: {
@@ -102,3 +113,15 @@ describe('CodeIndexMemory', () => {
     }
   });
 });
+
+function cosine(left: Float32Array, right: Float32Array): number {
+  let dot = 0;
+  let leftNorm = 0;
+  let rightNorm = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    dot += left[index] * right[index];
+    leftNorm += left[index] ** 2;
+    rightNorm += right[index] ** 2;
+  }
+  return dot / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
+}

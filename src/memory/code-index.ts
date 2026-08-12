@@ -17,25 +17,32 @@ export interface Embedder {
   embed(text: string): Promise<Float32Array>;
 }
 
-export class TransformersEmbedder implements Embedder {
-  private pipelinePromise?: Promise<(text: string, options: Record<string, unknown>) => Promise<{ data: Float32Array }>>;
-
-  constructor(private model = 'Xenova/all-MiniLM-L6-v2') {}
+export class HashingEmbedder implements Embedder {
+  constructor(private dimensions = 384) {
+    if (!Number.isInteger(dimensions) || dimensions <= 0) {
+      throw new Error('embedding dimensions 必须是正整数');
+    }
+  }
 
   async embed(text: string): Promise<Float32Array> {
-    if (!this.pipelinePromise) {
-      const moduleName = '@xenova/transformers';
-      this.pipelinePromise = import(moduleName).then(async (module) => {
-        return module.pipeline('feature-extraction', this.model) as Promise<(
-          text: string,
-          options: Record<string, unknown>
-        ) => Promise<{ data: Float32Array }>>;
-      });
+    const vector = new Float32Array(this.dimensions);
+    for (const token of tokenize(text)) {
+      const hash = createHash('sha256').update(token).digest();
+      const bucket = hash.readUInt32BE(0) % this.dimensions;
+      const sign = (hash[4] & 1) === 0 ? 1 : -1;
+      vector[bucket] += sign;
     }
-    const extractor = await this.pipelinePromise;
-    const result = await extractor(text, { pooling: 'mean', normalize: true });
-    return new Float32Array(result.data);
+    const norm = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+    if (norm > 0) vector.forEach((value, index) => { vector[index] = value / norm; });
+    return vector;
   }
+}
+
+function tokenize(text: string): string[] {
+  return text
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .match(/[\p{L}\p{N}_]+/gu) ?? [];
 }
 
 export interface CodeIndexResult {
