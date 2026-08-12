@@ -12,7 +12,7 @@
 |---|---|---|
 | SPEC 包含问题、用户故事、模块规约、NFR、架构、数据、凭据/分发、技术、验收、风险 | 满足 | [`SPEC.md`](./SPEC.md) 第 1–11 节 |
 | A 类领域与机制设计 | 满足 | `SPEC.md` 第 9 节；覆盖工具、反馈、危险动作、记忆及重点维度 |
-| PLAN 每个 task 含目标、文件、实现、失败测试/验证、依赖 | 满足 | [`PLAN.md`](./PLAN.md) Task 1–23 |
+| PLAN 每个 task 含目标、文件、实现、失败测试/验证、依赖 | 满足 | [`PLAN.md`](./PLAN.md) Task 1–24 |
 | 至少 3 轮 brainstorming、采纳/推翻及反思 | 满足 | [`SPEC_PROCESS.md`](./SPEC_PROCESS.md) 第一、三节 |
 | 陌生异类 agent 冷启动 | 补救性满足 | 7 月原始导出缺失；8 月补做的隔离会话、问题与限制见 `SPEC_PROCESS.md` 和 [`evidence/process-remediation/`](./evidence/process-remediation/) |
 | 自研 Agent 主循环，不调用现成 runner | 满足 | `src/core/agent.ts`；唯一第三方运行时依赖为 sql.js，默认 embedding 也由仓库代码实现 |
@@ -23,27 +23,27 @@
 | API key 安全录入/状态/更新/清除 | 满足 | `src/credential/`；scrypt + AES-256-GCM、目录 `0700`、文件 `0600`、无默认主密码 |
 | 一键测试与 GitHub Actions | 满足 | `npm test`；`.github/workflows/ci.yml` 的 unit-test/demo/package |
 | GitLab CI 中存在 `unit-test` job | 配置满足 | [`.gitlab-ci.yml`](./.gitlab-ci.yml)；课程 NJU Git 的实际流水线仍需课程平台权限 |
-| npm 分发 | 满足 | [`ise-harness@0.1.2`](https://www.npmjs.com/package/ise-harness/v/0.1.2)；`latest` 正确，公共 registry 冷安装、production audit、CLI 与 SDK smoke 均通过 |
+| npm 分发 | 满足 | [`ise-harness@0.1.3`](https://www.npmjs.com/package/ise-harness/v/0.1.3)；`latest` 正确，公共 registry 冷安装、production audit、CLI 与跨进程协议 smoke 均通过 |
 | README 必需章节 | 满足 | 简介、安装/运行/分发、key、安全边界、目录、限制、许可证均在 [`README.md`](./README.md) |
 | AGENT_LOG | 满足 | [`AGENT_LOG.md`](./AGENT_LOG.md) 按时间记录技能、context、输出、人工干预、教训 |
 | 1500–2500 字反思及 AI 润色标注 | 满足 | [`REFLECTION.md`](./REFLECTION.md)，正文约 2468 个字符，末尾含学生确认声明 |
 | 公网 WebUI | 满足 | [GitHub Pages](https://ryannotrain.github.io/ise-harness/)；静态 MockLLM 安全边界见 [`DEPLOYMENT.md`](./DEPLOYMENT.md) |
-| 公开 GitHub、提交/PR 历史、无真实凭据 | 满足 | [公开仓库](https://github.com/RyanNotRain/ise-harness)；PR #1–#11；最终敏感信息扫描随 Task 22 记录 |
+| 公开 GitHub、提交/PR 历史、无真实凭据 | 满足 | [公开仓库](https://github.com/RyanNotRain/ise-harness)；PR #1–#13；最终敏感信息扫描随 Task 22/24 记录 |
 
 ## 2. 本地最终验证
 
-Task 22 的修复提交 `8be7006` 与 Task 23 的安全发布提交 `3fe1040` 已通过：
+Task 24 的工具协议修复已通过：
 
 ```text
 npm run lint       PASS
-npm test           PASS — 18 files / 86 tests
+npm test           PASS — 18 files / 95 tests
 npm run test:demo PASS — 3 files / 7 tests
 npm run build      PASS
 npm audit          PASS — 0 vulnerabilities
 npm pack           PASS — 135 files
 ```
 
-外部复验也已完成：[PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合入后，main 分支 [GitHub Actions #31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 的三个 job 全绿。公共 npm registry 中 0.1.2 的 SHA-1 为 `3a5d0b99fe90551c7488de0a90d12c38a0657a34`；在空临时目录安装后，production audit 为 0，CLI、SDK Agent 和 `HashingEmbedder` smoke 均通过。
+外部复验也已完成：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 核心修复合入后，main 分支 [GitHub Actions #31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722) 的三个 job 全绿，Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功。公共 npm registry 中 0.1.3 的 SHA-1 为 `81db427aa5e076199920215f9e1a2fe487d76d4a`；在空临时目录安装后，production audit 为 0，CLI 和跨进程工具协议 smoke 均通过。0.1.2 已添加明确的升级提示。
 
 ## 3. 无法事后改写的两项限制
 
