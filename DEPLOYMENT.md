@@ -37,11 +37,12 @@ npm package / local Node WebUI → real Agent loop
 - 部署 commit：`b7dda6c`
 - 最后一次页面检查时间：2026-08-12；仓库恢复公开后重新启用 Pages，部署流水线成功
 - Pages 部署流水线：[GitHub Actions #31553339513](https://github.com/RyanNotRain/ise-harness/actions/runs/31553339513)，成功
-- npm 发布：[ise-harness@0.1.2](https://www.npmjs.com/package/ise-harness/v/0.1.2)，`latest` 已指向 0.1.2
-- npm registry 摘要：SHA-1 `3a5d0b99fe90551c7488de0a90d12c38a0657a34`；integrity `sha512-PRxGxvNY+R0YzeP7gS1gjei6OkvDAGsE7eDu6crh7uuuFIs0C64ZkOt79EG/XiukdLYLK+nnRCWFrBf0UKQ/tw==`
-- 公共包冷安装验证：临时空目录安装仅新增 2 个包；`npm audit --omit=dev` 为 0；CLI `--help`、SDK Agent 调用和 384 维 `HashingEmbedder` 均通过
-- 0.1.2 安全修复评审：[PR #11](https://github.com/RyanNotRain/ise-harness/pull/11)，合并 commit `194711d`
-- 0.1.2 合并后的 main CI/CD：[GitHub Actions #31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694)，`unit-test`、`demo`、`package` 三个 job 全部通过
+- npm 发布：[ise-harness@0.1.3](https://www.npmjs.com/package/ise-harness/v/0.1.3)，`latest` 已指向 0.1.3；存在工具协议缺陷的 0.1.2 已添加升级提示，没有删除历史版本
+- npm registry 摘要：SHA-1 `81db427aa5e076199920215f9e1a2fe487d76d4a`；integrity `sha512-o1EvHpU3P2aGwW61ZFNTeo5G+o/OEHPcHVnbgYabU3VqTlyGXerBnxvd98v/sxFRDTvj/up7sGV05Y/NFmVTXQ==`
+- 公共包冷安装验证：临时空目录从 registry 安装仅新增 2 个包；`npm audit --omit=dev` 为 0；CLI `--help` 通过；SQLite 关闭重开后仍能恢复完整 assistant/tool 调用组和 `toolCallId`
+- 工具协议记忆修复评审：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13)，合并 commit `5ab0d97`
+- 0.1.3 修复合并后的 main CI/CD：[GitHub Actions #31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722)，`unit-test`、`demo`、`package` 三个 job 全部通过
+- 同次 Pages 部署：[GitHub Actions #31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659)，成功；随后公网检查返回 HTTP 200
 - 主要整改评审：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
 - npm 发布评审：[PR #2](https://github.com/RyanNotRain/ise-harness/pull/2)
 - Pages 部署评审：[PR #3](https://github.com/RyanNotRain/ise-harness/pull/3)

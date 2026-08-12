@@ -178,10 +178,11 @@ Agent loop
 ### Task 24：工具协议记忆完整性与 0.1.3 发布
 
 - 目标：修复上下文管理和跨会话恢复丢失 `toolCalls/toolCallId`，保证真实 OpenAI/Anthropic 工具循环在压缩与重启后仍保持协议有效。
-- 文件：`src/core/agent.ts`、`src/memory/{types,sqlite-memory,context-window}.ts`、三组对应测试、README/SPEC、CI 与发布文档。
-- RED：第二轮 MockLLM 上下文缺少工具关联字段；SQLite 重开后字段消失；压缩切点拆开 assistant tool-call 与 tool-result；0.1.2 旧数据库的孤立 tool 消息会进入 provider 请求。
-- GREEN：显式持久化 `tool_calls/tool_call_id` 并迁移旧 schema；恢复时过滤无法配对的遗留 tool 消息；压缩边界向前扩展到完整工具调用组；上下文重建保留协议字段。
-- 验证：三轮 RED 分别暴露字段丢失、压缩/中断边界和错误结果未持久化；定向测试最终 35/35 GREEN，并覆盖旧数据库迁移。完整测试、audit、build、pack、registry smoke 和 CI 在发布前后执行并记录。
+- 文件：`src/core/agent.ts`、`src/memory/{types,sqlite-memory,context-window}.ts`、对应单测、README/SPEC、CI 与发布文档。
+- RED：第二轮 MockLLM 上下文缺少工具关联字段；SQLite 重开后字段消失；压缩切点拆开 assistant tool-call 与 tool-result；0.1.2 旧数据库的孤立 tool 消息会进入 provider 请求；多工具调用时验证反馈插入两个 tool 结果之间。
+- GREEN：显式持久化 `tool_calls/tool_call_id` 并迁移旧 schema；恢复时过滤无法配对的遗留 tool 消息；压缩边界向前扩展到完整工具调用组；上下文重建保留协议字段；同批工具结果全部写入后才追加验证反馈。
+- 验证：四轮 RED 分别暴露字段丢失、压缩/中断边界、错误结果未持久化和多工具顺序错误；定向测试最终 36/36 GREEN，并覆盖旧数据库迁移。完整验证为 18 files、95/95 tests、7/7 demos、audit 0、lint/build/pack 通过；0.1.3 公共 registry 冷安装、CLI、跨进程工具协议 smoke 通过。
+- 状态：核心修复 commit `0b717e1` 经 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合入，main CI [#31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722) 全绿；后续 RED/GREEN 为 `166dd16`、`96457a2`。`ise-harness@0.1.3` 已发布，0.1.2 已添加弃用提示。
 - 依赖：Task 23；发布 0.1.3 后弃用 0.1.2。
 
 ## 5. 依赖与并行关系
@@ -227,10 +228,11 @@ npm pack
 - [x] PLAN 中整改任务均已替换为真实 commit hash。
 - [x] 最终合规审查合并后的 [GitHub Actions #31554563001](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001) 中，`unit-test`、`demo`、`package` 全部通过；`.gitlab-ci.yml` 保留同等 jobs 供 NJU Git 执行。
 - [x] npm tarball 已由 GitHub Actions 上传为短期 artifact。
-- [x] [`ise-harness@0.1.2`](https://www.npmjs.com/package/ise-harness/v/0.1.2) 已发布到公开 registry，`latest` 指向该版本；冷安装后的 production audit 为 0，SDK、CLI 与内置 embedding smoke 均通过。
+- [x] [`ise-harness@0.1.3`](https://www.npmjs.com/package/ise-harness/v/0.1.3) 已发布到公开 registry，`latest` 指向该版本；冷安装后的 production audit 为 0，CLI 与跨进程工具协议 smoke 均通过。
 - [x] [GitHub Pages MockLLM WebUI](https://ryannotrain.github.io/ise-harness/) 部署成功，README/DEPLOYMENT 已写入真实 URL、commit 和检查时间；`render.yaml` 仅保留为可选真实后端模板。
 - [x] 2026-08-11 最终工作区与 Git 历史扫描未发现真实 key、`.env`、凭据文件或 npm token。
 - [x] Task 21 在独立 worktree 中留下 RED、GREEN、两阶段 review 与 fix loop；最终质量审查为 `APPROVED`，[PR #7](https://github.com/RyanNotRain/ise-harness/pull/7) CI 全绿。
 - [x] Task 22 已由 [PR #8](https://github.com/RyanNotRain/ise-harness/pull/8) 合并，main CI [#31578635146](https://github.com/RyanNotRain/ise-harness/actions/runs/31578635146) 通过；0.1.1 已发布且 registry CLI/SDK smoke 通过，但随即发现旧可选依赖漏洞，因此不作为最终推荐版本。
 - [x] Task 23 已由 [PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合并；main CI [#31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 全绿；0.1.2 registry 安装 audit/CLI/SDK smoke 全绿。0.1.1 的弃用标记由 npm 账户 WebAuth 单独确认。
+- [x] Task 24 核心修复已由 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合并；main CI [#31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722) 与 Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功；0.1.3 registry 校验值与本地候选包一致，公共冷安装全绿，0.1.2 已弃用。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。
