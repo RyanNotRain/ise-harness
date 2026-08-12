@@ -75,7 +75,7 @@
 | 08-11 20:25 | npm 公开发布 | npm 2FA、registry 安装 | 首次 publish 暴露 npm 新的强制 2FA 和 bin 规范化要求；先修正元数据，再由项目所有者完成 npm WebAuthn | [`ise-harness@0.1.0`](https://www.npmjs.com/package/ise-harness) 发布成功；SHA-1 `dd11a0dc565801dd044b6909f11e09a3f458f734`；全新目录安装后 CLI 与 SDK 均通过 | `d564dac` |
 | 08-12 08:40 | 公网 WebUI | GitHub Pages、MockLLM、浏览器验收 | Render 要求账号绑定支付方式，改用公开仓库自带的免费 Pages；不把静态页面伪装成真实后端 | 新增三个可交互确定性场景、安全边界说明和 Pages workflow；本地 DOM、视觉、反馈与刷新记忆检查通过 | `9b93588` |
 | 08-12 08:50 | Pages 发布验收 | GitHub Actions、HTTP 公网检查 | 首次 workflow 在 Pages 设置启用前启动，`configure-pages` 返回 404；先确认日志根因，再启用 Pages 并重跑 | [Pages WebUI](https://ryannotrain.github.io/ise-harness/) 发布成功；首页、CSS、JS 均为 HTTP 200；最新 main CI 全绿 | `b7dda6c`, [Pages CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31551306267) |
-| 08-12 | 最终合规复核 | 两份课程要求、GitHub CLI、完整文档检索 | 仓库误切为 private 后按公开仓要求恢复；Pages 被平台自动停用，重新启用并部署；逐项核对文档，不补造缺失的过程证据 | 仓库恢复 PUBLIC；[Pages CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31553339513) 成功；修正发布状态、Open Design 偏离、反思声明和冷启动证据限制 | 本次合规审查分支 |
+| 08-12 | 最终合规复核 | 两份课程要求、GitHub CLI、完整文档检索 | 仓库误切为 private 后按公开仓要求恢复；Pages 被平台自动停用，重新启用并部署；逐项核对文档，不补造缺失的过程证据 | 仓库恢复 PUBLIC；[Pages CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31553339513) 成功；修正发布状态、Open Design 偏离、反思声明和冷启动证据限制 | `3acfba8`, [PR #5](https://github.com/RyanNotRain/ise-harness/pull/5), [main CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31554563001) |
 
 ### 本轮偏离与教训
 
