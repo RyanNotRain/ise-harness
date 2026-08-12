@@ -35,7 +35,7 @@ npm ci
 npm test
 npm run lint
 npm pack
-npm install --global ./ise-harness-0.1.2.tgz
+npm install --global ./ise-harness-0.1.3.tgz
 ise-harness --help
 ```
 
@@ -167,7 +167,7 @@ tests/
 
 - shell 护栏是确定性规则引擎，不等价于 OS 沙箱；复杂混淆命令仍应由人工拒绝。
 - WebUI 当前是单机演示界面，没有用户账户和任务队列；公网部署必须配置访问令牌。
-- 代码索引默认关闭；启用后需要下载本地 embedding 模型。
+- 代码索引默认关闭；启用后使用内置的离线 hashing embedding，不下载模型，但同义词、跨语言等语义检索质量有限。SDK 用户可注入其他 `Embedder`。
 - OpenAI/Anthropic 的线上调用不在 CI 中执行，供应商协议通过 mock HTTP 测试验证。
 - sql.js 适合课程规模项目；高并发写入应迁移到原生 SQLite 服务。
 

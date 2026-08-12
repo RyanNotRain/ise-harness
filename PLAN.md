@@ -175,6 +175,15 @@ Agent loop
 - 状态：完成；commit `3fe1040` 经 [PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合入，main CI [#31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 全绿；`ise-harness@0.1.2` 已发布并完成公共 registry 冷安装、audit、CLI 和 SDK smoke。
 - 依赖：Task 22、0.1.1 registry smoke；发布 0.1.2 后弃用 0.1.1。
 
+### Task 24：工具协议记忆完整性与 0.1.3 发布
+
+- 目标：修复上下文管理和跨会话恢复丢失 `toolCalls/toolCallId`，保证真实 OpenAI/Anthropic 工具循环在压缩与重启后仍保持协议有效。
+- 文件：`src/core/agent.ts`、`src/memory/{types,sqlite-memory,context-window}.ts`、三组对应测试、README/SPEC、CI 与发布文档。
+- RED：第二轮 MockLLM 上下文缺少工具关联字段；SQLite 重开后字段消失；压缩切点拆开 assistant tool-call 与 tool-result；0.1.2 旧数据库的孤立 tool 消息会进入 provider 请求。
+- GREEN：显式持久化 `tool_calls/tool_call_id` 并迁移旧 schema；恢复时过滤无法配对的遗留 tool 消息；压缩边界向前扩展到完整工具调用组；上下文重建保留协议字段。
+- 验证：三轮 RED 分别暴露字段丢失、压缩/中断边界和错误结果未持久化；定向测试最终 35/35 GREEN，并覆盖旧数据库迁移。完整测试、audit、build、pack、registry smoke 和 CI 在发布前后执行并记录。
+- 依赖：Task 23；发布 0.1.3 后弃用 0.1.2。
+
 ## 5. 依赖与并行关系
 
 ```text
@@ -187,6 +196,10 @@ Task 14 主循环
                                     Task 21 独立 worktree / PR
                                                   ↓
                                     Task 22 最终逐条审查 / PR
+                                                  ↓
+                                    Task 23 依赖安全 / PR
+                                                  ↓
+                                    Task 24 工具协议完整性 / PR
 ```
 
 - 并行组 A：Task 15、16、17。
