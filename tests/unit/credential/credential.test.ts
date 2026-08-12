@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { FileCredentialStore } from '../../../src/credential/keychain.js';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -57,5 +57,18 @@ describe('FileCredentialStore', () => {
   it('错误主密码不得解密凭据', async () => {
     await createStore().set('test-key', 'persistent-secret');
     await expect(createStore('wrong-password').get('test-key')).rejects.toThrow('无法解密凭据');
+  });
+
+  it('应把已有凭据目录收紧为 0700，并将凭据文件保持为 0600', async () => {
+    const credentialDirectory = join(directory, 'existing');
+    const filePath = join(credentialDirectory, 'credentials.enc.json');
+    await mkdir(credentialDirectory, { mode: 0o755 });
+    await chmod(credentialDirectory, 0o755);
+
+    const store = new FileCredentialStore({ masterPassword: 'test-password', filePath });
+    await store.set('test-key', 'my-api-key');
+
+    expect((await stat(credentialDirectory)).mode & 0o777).toBe(0o700);
+    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
   });
 });

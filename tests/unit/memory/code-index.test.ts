@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { CodeIndexMemory } from '../../../src/memory/code-index.js';
+import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 describe('CodeIndexMemory', () => {
   it('应能索引文件并通过查询检索', async () => {
@@ -61,5 +64,41 @@ describe('CodeIndexMemory', () => {
     await index.indexFile('/test/file.ts', 'const x = 2;');
     expect(embedCalls.length).toBe(2);
     await index.close();
+  });
+
+  it('目录索引应排除依赖目录、跳过超大文件并可从磁盘恢复', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'ise-code-index-'));
+    const databasePath = join(directory, 'index.db');
+    const workspace = join(directory, 'workspace');
+    const embedCalls: string[] = [];
+    const embedder = {
+      async embed(text: string) {
+        embedCalls.push(text);
+        return new Float32Array([1, 0, 0]);
+      },
+    };
+
+    try {
+      await mkdir(join(workspace, 'src'), { recursive: true });
+      await mkdir(join(workspace, 'node_modules', 'ignored'), { recursive: true });
+      await writeFile(join(workspace, 'src', 'kept.ts'), 'export const kept = true;');
+      await writeFile(join(workspace, 'node_modules', 'ignored', 'index.ts'), 'export const ignored = true;');
+      await writeFile(join(workspace, 'too-large.ts'), 'x'.repeat(512 * 1024 + 1));
+
+      const first = new CodeIndexMemory(databasePath, { embedder });
+      expect(await first.indexDirectory(workspace)).toBe(1);
+      await first.close();
+      expect((await stat(databasePath)).mode & 0o777).toBe(0o600);
+      expect(embedCalls).toEqual(['export const kept = true;']);
+
+      const second = new CodeIndexMemory(databasePath, { embedder });
+      const results = await second.query('kept', 5);
+      expect(results).toHaveLength(1);
+      expect(results[0].filePath).toBe(join('src', 'kept.ts'));
+      expect(results[0].content).toContain('kept');
+      await second.close();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });

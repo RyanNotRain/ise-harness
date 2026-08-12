@@ -1,5 +1,5 @@
 import type { LLMProvider } from './llm-provider.js';
-import type { ChatMessage } from './types.js';
+import type { ChatMessage, LLMChatOptions } from './types.js';
 import type { Tool } from '../tools/types.js';
 import type { Memory, MemoryEntry } from '../memory/types.js';
 import type { ContextWindowMemory } from '../memory/context-window.js';
@@ -23,6 +23,7 @@ export interface AgentOptions {
   validators?: Validator[];
   maxFeedbackRetries?: number;
   onEvent?: (event: AgentEvent) => void;
+  llmOptions?: Pick<LLMChatOptions, 'maxTokens' | 'temperature'>;
 }
 
 export interface AgentEvent {
@@ -55,6 +56,7 @@ export class Agent {
   private validators: Validator[];
   private maxFeedbackRetries: number;
   private onEvent?: (event: AgentEvent) => void;
+  private llmOptions: Pick<LLMChatOptions, 'maxTokens' | 'temperature'>;
 
   constructor(options: AgentOptions) {
     this.llmProvider = options.llmProvider;
@@ -71,6 +73,7 @@ export class Agent {
     this.validators = options.validators ?? [];
     this.maxFeedbackRetries = options.maxFeedbackRetries ?? 3;
     this.onEvent = options.onEvent;
+    this.llmOptions = options.llmOptions ?? {};
   }
 
   async run(input: string): Promise<AgentRunResult> {
@@ -105,6 +108,7 @@ export class Agent {
     while (turnCount < this.maxTurns) {
       const contextMessages = await this.prepareContext(messages);
       const response = await this.llmProvider.chat(contextMessages, {
+        ...this.llmOptions,
         tools: Array.from(this.tools.values()).map(({ name, description, parameters }) => ({
           name,
           description,

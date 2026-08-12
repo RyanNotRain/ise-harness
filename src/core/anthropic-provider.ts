@@ -16,6 +16,10 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async chat(messages: ChatMessage[], options: LLMChatOptions = {}): Promise<LLMResponse> {
+    const system = messages
+      .filter((message) => message.role === 'system')
+      .map((message) => message.content)
+      .join('\n\n') || undefined;
     const apiMessages = messages
       .filter((message) => message.role !== 'system')
       .map((message) => {
@@ -59,7 +63,7 @@ export class AnthropicProvider implements LLMProvider {
         model: this.model,
         max_tokens: options.maxTokens ?? 4096,
         messages: apiMessages,
-        system: messages.find(m => m.role === 'system')?.content,
+        system,
         ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.tools?.length ? { tools: options.tools.map((tool) => ({
           name: tool.name,

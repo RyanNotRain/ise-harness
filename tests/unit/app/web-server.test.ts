@@ -3,6 +3,23 @@ import { startWebServer } from '../../../src/app/web-server.js';
 import { defaultConfig } from '../../../src/config/defaults.js';
 
 describe('WebUI server', () => {
+  it('未配置访问令牌时应拒绝启动真实后端', async () => {
+    const outcome = await startWebServer({
+      config: structuredClone(defaultConfig),
+      apiKey: 'server-api-key',
+      port: 0,
+    }).then(
+      (server) => ({ server, error: undefined }),
+      (error: Error) => ({ server: undefined, error }),
+    );
+
+    try {
+      expect(outcome.error?.message).toContain('ISE_WEB_ACCESS_TOKEN');
+    } finally {
+      await outcome.server?.close();
+    }
+  });
+
   it('应提供页面和健康检查', async () => {
     const server = await startWebServer({
       config: structuredClone(defaultConfig),

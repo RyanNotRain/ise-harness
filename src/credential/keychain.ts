@@ -71,7 +71,9 @@ export class FileCredentialStore implements CredentialStore {
   }
 
   private async writeStore(store: EncryptedStore): Promise<void> {
-    await mkdir(dirname(this.filePath), { recursive: true, mode: 0o700 });
+    const directory = dirname(this.filePath);
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    await chmod(directory, 0o700);
     const temporaryPath = `${this.filePath}.tmp`;
     await writeFile(temporaryPath, `${JSON.stringify(store, null, 2)}\n`, { mode: 0o600 });
     await rename(temporaryPath, this.filePath);
