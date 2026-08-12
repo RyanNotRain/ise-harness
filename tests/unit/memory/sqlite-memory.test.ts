@@ -73,4 +73,26 @@ describe('SQLiteMemory', () => {
       await rm(directory, { recursive: true, force: true });
     }
   });
+
+  it('并发写入同一个磁盘数据库时不应丢失条目或发生临时文件冲突', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'ise-memory-concurrent-'));
+    const path = join(directory, 'memory.db');
+    const concurrent = new SQLiteMemory(path);
+    try {
+      await expect(Promise.all(
+        Array.from({ length: 25 }, (_, index) => concurrent.store('shared', {
+          role: 'user',
+          content: `并发消息 ${index}`,
+        }))
+      )).resolves.toHaveLength(25);
+      await concurrent.close();
+
+      const reopened = new SQLiteMemory(path);
+      expect(await reopened.retrieve('shared')).toHaveLength(25);
+      await reopened.close();
+    } finally {
+      await concurrent.close().catch(() => undefined);
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 });
