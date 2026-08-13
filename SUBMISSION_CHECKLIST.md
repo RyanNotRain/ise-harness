@@ -28,7 +28,7 @@
 | AGENT_LOG | 满足 | [`AGENT_LOG.md`](./AGENT_LOG.md) 按时间记录技能、context、输出、人工干预、教训 |
 | 1500–2500 字反思及 AI 润色标注 | 满足 | [`REFLECTION.md`](./REFLECTION.md)，正文约 2468 个字符，末尾含学生确认声明 |
 | 公网 WebUI | 满足 | [GitHub Pages](https://ryannotrain.github.io/ise-harness/)；静态 MockLLM 安全边界见 [`DEPLOYMENT.md`](./DEPLOYMENT.md) |
-| 公开 GitHub、提交/PR 历史、无真实凭据 | 满足 | [公开仓库](https://github.com/RyanNotRain/ise-harness)；现有 PR #1–#16；原始 Task 1–20 的真实对应关系见 [`TASK_TRACEABILITY.md`](./TASK_TRACEABILITY.md) |
+| 公开 GitHub、提交/PR 历史、无真实凭据 | 满足 | [公开仓库](https://github.com/RyanNotRain/ise-harness)；现有 PR #1–#18；原始 Task 1–20 的真实对应关系见 [`TASK_TRACEABILITY.md`](./TASK_TRACEABILITY.md) |
 
 ## 2. 本地最终验证
 
