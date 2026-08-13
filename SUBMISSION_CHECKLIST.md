@@ -23,7 +23,7 @@
 | API key 安全录入/状态/更新/清除 | 满足 | `src/credential/`；scrypt + AES-256-GCM、目录 `0700`、文件 `0600`、无默认主密码 |
 | 一键测试与 GitHub Actions | 满足 | `npm test`；`.github/workflows/ci.yml` 的 unit-test/demo/package |
 | GitLab CI 中存在 `unit-test` job | 配置满足 | [`.gitlab-ci.yml`](./.gitlab-ci.yml)；课程 NJU Git 的实际流水线仍需课程平台权限 |
-| npm 分发 | 满足（0.1.4 待发布） | 当前公开稳定版 [`ise-harness@0.1.3`](https://www.npmjs.com/package/ise-harness/v/0.1.3) 已通过冷安装；包含本轮 README 修正的 0.1.4 候选包已在本地打包验证，合并后发布 |
+| npm 分发 | 满足 | [`ise-harness@0.1.4`](https://www.npmjs.com/package/ise-harness/v/0.1.4)；`latest` 正确，公共 registry 冷安装、production audit、CLI 与 SDK smoke 均通过 |
 | README 必需章节 | 满足 | 简介、安装/运行/分发、key、安全边界、目录、限制、许可证均在 [`README.md`](./README.md) |
 | AGENT_LOG | 满足 | [`AGENT_LOG.md`](./AGENT_LOG.md) 按时间记录技能、context、输出、人工干预、教训 |
 | 1500–2500 字反思及 AI 润色标注 | 满足 | [`REFLECTION.md`](./REFLECTION.md)，正文约 2468 个字符，末尾含学生确认声明 |
@@ -43,7 +43,7 @@ npm audit          PASS — 0 vulnerabilities
 npm pack           PASS — 135 files；0.1.4 候选 SHA-1 566735697824024a14c39ffda01722f17312108a
 ```
 
-上一版外部复验已经完成：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 与 [PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合入工具协议修复，main [GitHub Actions #31607951860](https://github.com/RyanNotRain/ise-harness/actions/runs/31607951860) 三个 job 全绿，Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功。公共 npm 0.1.3 的 SHA-1 为 `81db427aa5e076199920215f9e1a2fe487d76d4a`，空目录冷安装后的 audit、CLI 和跨进程协议 smoke 均通过。Task 25 的 0.1.4 外部结果将在合并和发布后回填，不提前标为完成。
+Task 25 由 [PR #17](https://github.com/RyanNotRain/ise-harness/pull/17) 合入，main [GitHub Actions #31658688505](https://github.com/RyanNotRain/ise-harness/actions/runs/31658688505) 的 `unit-test`、`demo`、`package` 全绿。公共 npm 0.1.4 的 SHA-1 为 `566735697824024a14c39ffda01722f17312108a`，integrity 为 `sha512-6MZVdYxmWU3b9oGt6JYUARRKTwFqJI2QuT3n6qO1z1pwZAZA0d4S6GHOmE1ga+TYMjWcelxrRMEh6KVCVXzcNA==`。空目录冷安装仅新增 2 个包，production audit 为 0，CLI 与 SDK smoke 通过。Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功，2026-08-13 公网复查返回 HTTP 200。
 
 ## 3. 无法事后改写的两项限制
 
