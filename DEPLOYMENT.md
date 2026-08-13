@@ -37,13 +37,14 @@ npm package / local Node WebUI → real Agent loop
 - 部署 commit：`b7dda6c`
 - 最后一次部署状态复核：2026-08-13；Pages 仍由公开仓库的 workflow 提供
 - Pages 部署流水线：[GitHub Actions #31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659)，成功
-- npm 发布：[ise-harness@0.1.3](https://www.npmjs.com/package/ise-harness/v/0.1.3)，`latest` 已指向 0.1.3；存在工具协议缺陷的 0.1.2 已添加升级提示，没有删除历史版本
-- npm registry 摘要：SHA-1 `81db427aa5e076199920215f9e1a2fe487d76d4a`；integrity `sha512-o1EvHpU3P2aGwW61ZFNTeo5G+o/OEHPcHVnbgYabU3VqTlyGXerBnxvd98v/sxFRDTvj/up7sGV05Y/NFmVTXQ==`
-- 公共包冷安装验证：临时空目录从 registry 安装仅新增 2 个包；`npm audit --omit=dev` 为 0；CLI `--help` 通过；SQLite 关闭重开后仍能恢复完整 assistant/tool 调用组和 `toolCallId`
+- npm 发布：[ise-harness@0.1.4](https://www.npmjs.com/package/ise-harness/v/0.1.4)，`latest` 已指向 0.1.4；旧版本保留原发布记录
+- npm registry 摘要：SHA-1 `566735697824024a14c39ffda01722f17312108a`；integrity `sha512-6MZVdYxmWU3b9oGt6JYUARRKTwFqJI2QuT3n6qO1z1pwZAZA0d4S6GHOmE1ga+TYMjWcelxrRMEh6KVCVXzcNA==`
+- 公共包冷安装验证：临时空目录从 registry 安装仅新增 2 个包；`npm audit --omit=dev` 为 0；CLI `--help` 与 SDK Agent smoke 通过
 - 工具协议记忆修复评审：[PR #13](https://github.com/RyanNotRain/ise-harness/pull/13)，合并 commit `5ab0d97`
 - 0.1.3 修复合并后的 main CI/CD：[GitHub Actions #31595587722](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722)，`unit-test`、`demo`、`package` 三个 job 全部通过
 - 多工具顺序修复与最终证据：[PR #15](https://github.com/RyanNotRain/ise-harness/pull/15)，合并 commit `1a55478`；最终 main CI [#31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 全部通过
-- 0.1.4 本地候选：修正文档边界与源码启动说明，并把重点维度 demo 改为磁盘关闭重开；135 files，SHA-1 `566735697824024a14c39ffda01722f17312108a`。公开发布与冷安装结果待合并后记录
+- 0.1.4 发布评审：[PR #17](https://github.com/RyanNotRain/ise-harness/pull/17)，合并 commit `60e6540`；main CI [#31658688505](https://github.com/RyanNotRain/ise-harness/actions/runs/31658688505) 全部通过
+- 2026-08-13 公网复核：仓库为 PUBLIC；Pages 配置指向公开 workflow URL；首页返回 HTTP 200
 - 同次 Pages 部署：[GitHub Actions #31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659)，成功；随后公网检查返回 HTTP 200
 - 主要整改评审：[PR #1](https://github.com/RyanNotRain/ise-harness/pull/1)
 - npm 发布评审：[PR #2](https://github.com/RyanNotRain/ise-harness/pull/2)

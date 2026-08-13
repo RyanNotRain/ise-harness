@@ -93,6 +93,8 @@
 | 08-13 09:09 | Task 25 GREEN | Codex、`humanizer-zh`、Vitest | 保留课程术语和历史偏离，删减宣传式措辞；只写可由命令、commit 或公开链接核验的结论 | README 补源码 WebUI 步骤、Bash 边界、平台与许可证；磁盘 demo 关闭重开；新增 Task 1–20 事后追溯表。定向 10/10、全量 102/102、demo 8/8，lint/build/audit/pack 通过 | 公开 `1e38b5c`；本地同内容 `c829318` |
 | 08-13 09:12 | Task 25 干净源码复验 | 隔离归档、npm、Node WebUI | 从 GREEN 快照导出无 `dist`/`node_modules` 的源码，在新目录重装并构建；用占位 API key 和 token，只验证本地启动 | 首次沙箱安装因联网受限留下空包目录，未误报通过；获批联网后 `npm ci`、build 成功，WebUI 在随机端口启动后立即关闭 | `1e38b5c` |
 | 08-13 09:15 | Task 25 worktree 整理 | git worktree | RED/GREEN 已在独立分支提交，但当时工作目录不是新 worktree；为后续文档复核与 PR 建立专用目录，并如实保留时间顺序 | `/private/tmp/ise-task25-submission-closure` / `codex/task25-submission-closure`；不写成开发前已存在，也不用于倒填 Task 1–20 | — |
+| 08-13 09:45 | Task 25 PR 与 main CI | GitHub Actions、Git 数据 API | 本机到 GitHub smart-HTTP 端点超时；REST API可达。先核对每个阶段文件范围，再按 RED/GREEN/证据顺序上传同内容 tree；错误编码的未合并 ref 当场恢复，不进入 PR | [PR #17](https://github.com/RyanNotRain/ise-harness/pull/17) 保留 4 个公开 commit；两组 PR checks 与合并后 [main CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31658688505) 的三个 job 均全绿 | `47b56d6`, `1e38b5c`, `2a3b1c6`, `f71f3da`, merge `60e6540` |
+| 08-13 09:50 | 0.1.4 公共发布复验 | npm WebAuth、registry 冷安装、Pages HTTP | npm 登录会话过期后重新走官方浏览器授权；publish 再单独授权。不复用本地 tarball做最终安装验证 | `latest` 为 0.1.4；SHA-1 `566735697824024a14c39ffda01722f17312108a`；空目录仅新增 2 个包，audit 0，CLI/SDK smoke 通过；Pages HTTP 200 | [npm 0.1.4](https://www.npmjs.com/package/ise-harness/v/0.1.4), [PR #17](https://github.com/RyanNotRain/ise-harness/pull/17) |
 
 ### 本轮偏离与教训
 
