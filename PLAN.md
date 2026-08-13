@@ -189,8 +189,8 @@ Agent loop
 
 - 目标：修正 README 的源码启动步骤、Bash 边界、平台说明和许可证清单；让重点维度演示真正关闭并重开磁盘数据库；为原始 Task 1–20 建立可核验的事后追溯表。
 - 文件：`README.md`、`TASK_TRACEABILITY.md`、`tests/demo/memory-demo.test.ts`、`tests/unit/docs/readme.test.ts`、`package*.json` 及提交文档。
-- RED：README 契约和磁盘重开演示在旧版本上共 7 项失败；commit `a706b5c`。
-- GREEN：补齐源码 `npm ci`/build/key/WebUI 步骤，明确文件工具与 Bash 的不同边界，加入平台与依赖许可证说明；演示改用临时磁盘数据库并在关闭后重开；commit `c829318`。
+- RED：README 契约和磁盘重开演示在旧版本上共 7 项失败；公开 commit `47b56d6`（本地同内容 commit `a706b5c`）。
+- GREEN：补齐源码 `npm ci`/build/key/WebUI 步骤，明确文件工具与 Bash 的不同边界，加入平台与依赖许可证说明；演示改用临时磁盘数据库并在关闭后重开；公开 commit `1e38b5c`（本地同内容 commit `c829318`）。
 - 追溯原则：`TASK_TRACEABILITY.md` 只关联真实 commit、当前产物和现有测试。它明确标注为事后回溯，不补造原始 worktree、subagent、TDD 或 PR。
 - 验证：定向 10/10；全量 19 files、102/102 tests；3 files、8/8 demos；lint、build、production audit、pack 通过。0.1.4 候选 tarball 为 135 files，SHA-1 `566735697824024a14c39ffda01722f17312108a`；干净归档中重新安装、构建并启动随机端口 WebUI 成功。
 - worktree：RED/GREEN 提交完成后，将分支移入 `/private/tmp/ise-task25-submission-closure` 继续文档复核和 PR；日志保留这个先后顺序，不把它写成开发前已存在。
