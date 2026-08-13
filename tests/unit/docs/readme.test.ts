@@ -15,7 +15,7 @@ describe('README 提交契约', () => {
   it('应准确区分文件工具与 Bash 的工作区边界', async () => {
     const readme = await readFile('README.md', 'utf-8');
 
-    expect(readme).toMatch(/文件工具[^\n]*拒绝[^\n]*workspaceRoot/);
+    expect(readme).toMatch(/(读文件、写文件和搜索工具|文件工具)[^\n]*拒绝[^\n]*workspaceRoot/);
     expect(readme).toMatch(/Bash[^\n]*(cwd|工作目录)[^\n]*不[^\n]*(沙箱|边界)/);
   });
 
