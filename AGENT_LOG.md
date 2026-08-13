@@ -89,6 +89,10 @@
 | 08-12 19:32 | Task 24 工具协议记忆修复 | 独立 worktree、TDD、离线复现 | 最终复审发现 86/86 全绿仍未覆盖“上下文压缩/跨会话 + 工具调用”组合路径 | 四轮 RED 覆盖字段丢失、压缩切点、孤立/中断组、未知工具与异常结果、多工具反馈顺序；显式迁移 `tool_calls/tool_call_id`，定向 36/36 GREEN，并升级官方 Actions v7 | `27d15f3`, `9b29a5e`, `50401ba`, `0b717e1`, `166dd16`, `96457a2`, [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) |
 | 08-12 20:18 | 0.1.3 公共发布复验 | npm WebAuth、registry 冷安装、GitHub Actions | 发布前后都不复用仓库入口；以 registry 摘要和跨进程工具协议恢复为准 | `latest` 为 0.1.3；SHA-1 `81db427aa5e076199920215f9e1a2fe487d76d4a`；仅新增 2 个包，production audit 0，CLI 与完整 assistant/tool 调用组恢复通过；0.1.2 已弃用 | [npm 0.1.3](https://www.npmjs.com/package/ise-harness/v/0.1.3), [main CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587722), [Pages](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) |
 | 08-12 22:31 | 0.1.3 源码对齐 | GitHub PR、Actions | 发现 PR #13 合并时远端分支停在核心修复，而 npm 包还含后续多工具顺序修复；不以文档掩盖差异 | 从实际 main 重建干净分支，合入缺失 RED/GREEN 和证据；[PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合并，最终 main CI 三个 job 全绿 | `ade5516`, `8113df3`, `6753f30`, [CI](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) |
+| 08-13 08:55 | Task 25 RED | Codex 文档/代码审查、Vitest | 重新对照两份课程要求，专查 README 命令、安全边界、重点维度 demo 和 Task 1–20 证据 | 旧 README 契约与 `:memory:` 重开演示共 7 项失败、3 项通过；先保存 RED，不把文字修改直接写成完成 | 公开 `47b56d6`；本地同内容 `a706b5c` |
+| 08-13 09:09 | Task 25 GREEN | Codex、`humanizer-zh`、Vitest | 保留课程术语和历史偏离，删减宣传式措辞；只写可由命令、commit 或公开链接核验的结论 | README 补源码 WebUI 步骤、Bash 边界、平台与许可证；磁盘 demo 关闭重开；新增 Task 1–20 事后追溯表。定向 10/10、全量 102/102、demo 8/8，lint/build/audit/pack 通过 | 公开 `1e38b5c`；本地同内容 `c829318` |
+| 08-13 09:12 | Task 25 干净源码复验 | 隔离归档、npm、Node WebUI | 从 GREEN 快照导出无 `dist`/`node_modules` 的源码，在新目录重装并构建；用占位 API key 和 token，只验证本地启动 | 首次沙箱安装因联网受限留下空包目录，未误报通过；获批联网后 `npm ci`、build 成功，WebUI 在随机端口启动后立即关闭 | `1e38b5c` |
+| 08-13 09:15 | Task 25 worktree 整理 | git worktree | RED/GREEN 已在独立分支提交，但当时工作目录不是新 worktree；为后续文档复核与 PR 建立专用目录，并如实保留时间顺序 | `/private/tmp/ise-task25-submission-closure` / `codex/task25-submission-closure`；不写成开发前已存在，也不用于倒填 Task 1–20 | — |
 
 ### 本轮偏离与教训
 

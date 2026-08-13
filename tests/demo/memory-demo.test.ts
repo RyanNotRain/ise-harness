@@ -1,15 +1,23 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SQLiteMemory } from '../../src/memory/sqlite-memory.js';
 
 describe('演示：跨会话记忆存储与检索', () => {
   let memory: SQLiteMemory;
+  let temporaryDirectory: string;
+  let databasePath: string;
 
-  beforeAll(() => {
-    memory = new SQLiteMemory(':memory:');
+  beforeAll(async () => {
+    temporaryDirectory = await mkdtemp(join(tmpdir(), 'ise-memory-demo-'));
+    databasePath = join(temporaryDirectory, 'memory.sqlite');
+    memory = new SQLiteMemory(databasePath);
   });
 
   afterAll(async () => {
     await memory.close();
+    await rm(temporaryDirectory, { recursive: true, force: true });
   });
 
   it('应存储和检索多轮对话', async () => {
@@ -68,5 +76,17 @@ describe('演示：跨会话记忆存储与检索', () => {
     await memory.clear('temp-session');
     const entries = await memory.retrieve('temp-session');
     expect(entries).toEqual([]);
+  });
+
+  it('应在关闭并重新打开数据库后恢复重点维度演示数据', async () => {
+    await memory.store('restart-session', {
+      role: 'user',
+      content: '这条约定需要跨进程保留',
+    });
+    await memory.close();
+    memory = new SQLiteMemory(databasePath);
+
+    const restored = await memory.retrieve('restart-session');
+    expect(restored.map((entry) => entry.content)).toContain('这条约定需要跨进程保留');
   });
 });

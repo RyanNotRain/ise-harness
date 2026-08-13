@@ -1,6 +1,6 @@
 # ise-harness 实现计划
 
-> 状态日期：2026-08-12
+> 状态日期：2026-08-13
 > 重点维度：记忆与上下文管理
 > 分发：npm 包；界面：内置 WebUI
 
@@ -185,6 +185,17 @@ Agent loop
 - 状态：核心修复 commit `0b717e1` 经 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 合入；后续多工具顺序 RED/GREEN 由 [PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合入。最终 main CI [#31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 全绿；`ise-harness@0.1.3` 已发布，0.1.2 已添加弃用提示。
 - 依赖：Task 23；发布 0.1.3 后弃用 0.1.2。
 
+### Task 25：提交说明、磁盘演示与历史追溯闭环
+
+- 目标：修正 README 的源码启动步骤、Bash 边界、平台说明和许可证清单；让重点维度演示真正关闭并重开磁盘数据库；为原始 Task 1–20 建立可核验的事后追溯表。
+- 文件：`README.md`、`TASK_TRACEABILITY.md`、`tests/demo/memory-demo.test.ts`、`tests/unit/docs/readme.test.ts`、`package*.json` 及提交文档。
+- RED：README 契约和磁盘重开演示在旧版本上共 7 项失败；公开 commit `47b56d6`（本地同内容 commit `a706b5c`）。
+- GREEN：补齐源码 `npm ci`/build/key/WebUI 步骤，明确文件工具与 Bash 的不同边界，加入平台与依赖许可证说明；演示改用临时磁盘数据库并在关闭后重开；公开 commit `1e38b5c`（本地同内容 commit `c829318`）。
+- 追溯原则：`TASK_TRACEABILITY.md` 只关联真实 commit、当前产物和现有测试。它明确标注为事后回溯，不补造原始 worktree、subagent、TDD 或 PR。
+- 验证：定向 10/10；全量 19 files、102/102 tests；3 files、8/8 demos；lint、build、production audit、pack 通过。0.1.4 候选 tarball 为 135 files，SHA-1 `566735697824024a14c39ffda01722f17312108a`；干净归档中重新安装、构建并启动随机端口 WebUI 成功。
+- worktree：RED/GREEN 提交完成后，将分支移入 `/private/tmp/ise-task25-submission-closure` 继续文档复核和 PR；日志保留这个先后顺序，不把它写成开发前已存在。
+- 依赖：Task 24 与两份课程要求。公开 npm 0.1.4 和 GitHub CI 结果在合并后补入发布记录。
+
 ## 5. 依赖与并行关系
 
 ```text
@@ -201,12 +212,15 @@ Task 14 主循环
                                     Task 23 依赖安全 / PR
                                                   ↓
                                     Task 24 工具协议完整性 / PR
+                                                  ↓
+                                    Task 25 提交证据闭环 / PR
 ```
 
 - 并行组 A：Task 15、16、17。
 - 串行组 B：Task 14 → 18 → 19 → 20。
 - 原始 Task 1–20 没有逐模块 worktree/MR，历史事实不变。Task 21 是提交前补做的一次完整工作流，不倒填旧记录，也不宣称能替代过去每个模块缺失的 PR。
 - Task 22 使用独立 worktree、先复现问题再修复，但没有虚构逐问题的新鲜 subagent 或两阶段评审记录。
+- Task 25 增加逐任务追溯矩阵。矩阵能提高可核验性，但不会改变原始 Task 1–20 的流程结论。
 
 ## 6. 完成定义
 
@@ -235,4 +249,5 @@ npm pack
 - [x] Task 22 已由 [PR #8](https://github.com/RyanNotRain/ise-harness/pull/8) 合并，main CI [#31578635146](https://github.com/RyanNotRain/ise-harness/actions/runs/31578635146) 通过；0.1.1 已发布且 registry CLI/SDK smoke 通过，但随即发现旧可选依赖漏洞，因此不作为最终推荐版本。
 - [x] Task 23 已由 [PR #11](https://github.com/RyanNotRain/ise-harness/pull/11) 合并；main CI [#31586278694](https://github.com/RyanNotRain/ise-harness/actions/runs/31586278694) 全绿；0.1.2 registry 安装 audit/CLI/SDK smoke 全绿。0.1.1 的弃用标记由 npm 账户 WebAuth 单独确认。
 - [x] Task 24 由 [PR #13](https://github.com/RyanNotRain/ise-harness/pull/13) 和 [PR #15](https://github.com/RyanNotRain/ise-harness/pull/15) 合并；最终 main CI [#31607287616](https://github.com/RyanNotRain/ise-harness/actions/runs/31607287616) 与 Pages [#31595587659](https://github.com/RyanNotRain/ise-harness/actions/runs/31595587659) 成功；0.1.3 registry 校验值与本地候选包一致，公共冷安装全绿，0.1.2 已弃用。
+- [ ] Task 25 的 RED/GREEN 与本地候选包已经完成；待 PR 合并后发布 0.1.4，再记录 registry 冷安装和最终 CI。
 - [ ] 将同一仓库同步到课程指定的 NJU Git 地址，并确认该平台最后一次 `unit-test` pipeline 为 pass；此项需要课程账号与目标仓库 URL，不能用 GitHub Actions 记录代替或虚构。
