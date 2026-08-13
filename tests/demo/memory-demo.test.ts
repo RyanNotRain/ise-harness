@@ -69,4 +69,16 @@ describe('演示：跨会话记忆存储与检索', () => {
     const entries = await memory.retrieve('temp-session');
     expect(entries).toEqual([]);
   });
+
+  it('应在关闭并重新打开数据库后恢复重点维度演示数据', async () => {
+    await memory.store('restart-session', {
+      role: 'user',
+      content: '这条约定需要跨进程保留',
+    });
+    await memory.close();
+    memory = new SQLiteMemory(':memory:');
+
+    const restored = await memory.retrieve('restart-session');
+    expect(restored.map((entry) => entry.content)).toContain('这条约定需要跨进程保留');
+  });
 });
